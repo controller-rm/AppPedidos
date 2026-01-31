@@ -424,24 +424,46 @@ div[data-testid="stLinkButton"] a:hover {
 st.markdown("""
 <style>
 
-/* ALTURA INTELIGENTE MOBILE */
+/* ===== SCROLL SOMENTE NA LISTA DE PRODUTOS ===== */
+section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("PRODUTOS")) + div {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+/* MOBILE */
 @media (max-width: 768px) {
-    div[data-testid="stVerticalBlock"] > div:has(.scroll-fix) {
-        height: calc(100vh - 160px) !important;
+    section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("PRODUTOS")) + div {
+        height: calc(100vh - 150px) !important;
     }
 }
 
-/* DESKTOP */
-div[data-testid="stVerticalBlock"] > div:has(.scroll-fix) {
-    height: calc(100vh - 220px);
-    overflow-y: auto;
-    padding-right: 6px;
+/* BARRA DE SCROLL BONITA */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
     border-radius: 10px;
-    background: #fafafa;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* BOTÕES FULL WIDTH NO MOBILE */
+@media (max-width: 768px) {
+    div[data-testid="column"] {
+        padding-left: 0px !important;
+        padding-right: 0px !important;
+    }
+    div[data-testid="stButton"] > button {
+        width: 100% !important;
+    }
 }
 
 </style>
 """, unsafe_allow_html=True)
+
 
 
 #SCROLL SÓ NA LISTA DE PEDIDO-CARRINHO TAB2
@@ -530,7 +552,7 @@ with tab1:
     container_produtos = st.container()
 
     # 👇 MARCADOR CSS
-    container_produtos.markdown('<div class="scroll-fix"></div>', unsafe_allow_html=True)
+    # container_produtos.markdown('<div class="scroll-fix"></div>', unsafe_allow_html=True)
 
     with container_produtos:
 
@@ -894,6 +916,8 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
+
 
 
 
