@@ -593,13 +593,15 @@ with tab1:
                 background:white;">
             """, unsafe_allow_html=True)
 
-            c1, c2, c3, c4, c5 = st.columns([1,3,2,2,2])
+            c1, c2, c3, c4 = st.columns([1,3,2,2])
             c1.write(codigo)
             c2.write(row["descricao"])
             c3.write(f'R$ {preco:.2f}')
             qtd = c4.number_input("Qtd", value=1, min_value=1, step=1, key=f"qtd_{codigo}_{rc}")
 
-            if c5.button("Adicionar ➕", key=f"add_{codigo}", type="primary"):
+            # 👇 BOTÃO FORA DAS COLUNAS
+            if st.button("Adicionar ➕", key=f"add_{codigo}", type="primary", use_container_width=True):
+
                 if ja_no_carrinho:
                     idx = next(i for i, item in enumerate(st.session_state.carrinho) if item["codigo"] == codigo)
                     st.session_state.carrinho[idx]["qtd"] += qtd
@@ -617,7 +619,9 @@ with tab1:
             if ja_no_carrinho:
                 qtd_total = carrinho_map[codigo]["qtd"]
                 st.markdown("🟢 **Este produto já está no pedido**")
-                c5.markdown(f"✅ **No Pedido: {qtd_total}**")
+                st.markdown(f"✅ **No Pedido: {qtd_total} unidades**")
+
+
 
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -642,7 +646,7 @@ with tab2:
 
                 st.markdown('<div class="card-produto">', unsafe_allow_html=True)
 
-                col1, col2, col3, col4, col5, col6 = st.columns([1, 3, 2, 2, 2, 2])
+                col1, col2, col3, col4 = st.columns([1, 3, 2, 2])
                 col1.write(item["codigo"])
                 col2.write(item["descricao"])
                 col3.write(f'R$ {item["preco"]:.2f}')
@@ -655,14 +659,16 @@ with tab2:
                     key=f"edit_qtd_{i}_{st.session_state.reset_counter}"
                 )
 
-                if col5.button("Atualizar - 🔄", key=f"update_{i}", type="primary"):
+                # 👇 BOTÕES FORA DA LINHA
+                if st.button("Atualizar 🔄", key=f"update_{i}", type="primary", use_container_width=True):
                     st.session_state.carrinho[i]["qtd"] = nova_qtd
                     st.session_state.carrinho[i]["total"] = nova_qtd * item["preco"]
                     st.rerun()
 
-                if col6.button("Remover - 🗑️", key=f"remove_{i}", type="secondary"):
+                if st.button("Remover 🗑️", key=f"remove_{i}", type="secondary", use_container_width=True):
                     del st.session_state.carrinho[i]
                     st.rerun()
+
 
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -934,6 +940,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
