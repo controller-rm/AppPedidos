@@ -61,7 +61,6 @@ def consulta_cnpj(cnpj):
  # =====================================================
 # PRODUTOS - BASE COMPLETA
 # =====================================================
-
 dados_produtos = """
 0000001	;	BULE COM INFUSOR - HORTICOOL GREEN 500ML	;	308,9
 0000002	;	BULE COM INFUSOR - HORTICOOL GREEN 1000M	;	401,58
@@ -232,6 +231,7 @@ dados_produtos = """
 0000092	;	CONJUNTO AROMA CRISTAL BLUE RIBBON 10x10	;	370,67
 0000093	;	CONJUNTO DIFUSOR BLUE RIBBON PINK 9.5x9.	;	370,67
 0000094	;	CONJUNTO DIFUSOR BLUE RIBBON 9.5x9.5x9.8	;	370,67
+
 """
 
 df_produtos = pd.read_csv(
@@ -284,6 +284,21 @@ if st.session_state.dados_cliente:
     st.text_input("Razão Social", d["razao"], disabled=True)
     st.text_area("Endereço", endereco, disabled=True)
 
+st.markdown("""
+<style>
+.card-produto {
+    border: 1px solid #e6e6e6;
+    border-left: 6px solid #4CAF50;
+    padding: 12px 12px 6px 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # Adicione ou expanda o st.markdown existente:
 st.markdown("""
 <style>
@@ -311,81 +326,150 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
-# =====================================================
-# PRODUTOS
-# =====================================================
-st.header("📦 Produtos")
-busca = st.text_input("Pesquisar por código ou descrição", key=f"busca_{rc}")
+
+tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
+
+# Mapa de produtos já adicionados
+carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
+
+with tab1:
+    # =====================================================
+    # PRODUTOS
+    # =====================================================
+    st.header("📦 PRODUTOS")
+    busca = st.text_input("Pesquisar por código ou descrição", key=f"busca_{rc}")
+
+    df_filtrado = df_produtos[
+        df_produtos["descricao"].str.contains(busca, case=False, na=False) |
+        df_produtos["codigo"].str.contains(busca, case=False, na=False)
+    ]
+
+    # 🔥 MAPA DO CARRINHO
+    carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
+
+    for _, row in df_filtrado.iterrows():
+
+        codigo = row["codigo"]
+        preco = row["preco"]
+
+        # 🔎 Verifica se já está no carrinho
+        ja_no_carrinho = codigo in carrinho_map
+
+        # 🎨 Cor da lateral do card
+        border_color = "#4CAF50" if ja_no_carrinho else "#e6e6e6"
+
+        # 🟩 ABRE O CARD (APENAS UMA VEZ)
+        st.markdown(f"""
+        <div style="
+            border:1px solid #e6e6e6;
+            border-left:6px solid {border_color};
+            padding:12px;
+            border-radius:8px;
+            margin-bottom:10px;
+            background:white;">
+        """, unsafe_allow_html=True)
+
+        # 📦 COLUNAS
+        c1, c2, c3, c4, c5 = st.columns([1,3,2,2,2])
+
+        c1.write(codigo)
+        c2.write(row["descricao"])
+        c3.write(f'R$ {preco:.2f}')
+
+        qtd = c4.number_input("Qtd", value=1, min_value=1, step=1, key=f"qtd_{codigo}_{rc}")
+
+        # 🔘 BOTÃO ADICIONAR
+        if c5.button("Adicionar ➕", key=f"add_{codigo}"):
+            if ja_no_carrinho:
+                idx = next(i for i, item in enumerate(st.session_state.carrinho) if item["codigo"] == codigo)
+                st.session_state.carrinho[idx]["qtd"] += qtd
+                st.session_state.carrinho[idx]["total"] = st.session_state.carrinho[idx]["qtd"] * preco
+                st.success("Quantidade somada ao produto!")
+            else:
+                st.session_state.carrinho.append({
+                    "codigo": codigo,
+                    "descricao": row["descricao"],
+                    "qtd": qtd,
+                    "preco": preco,
+                    "total": qtd * preco
+                })
+                st.success("Produto adicionado ao pedido!")
+
+            st.rerun()
+
+        # 🟢 MOSTRA QUANTIDADE SE JÁ ESTIVER NO PEDIDO
+        if ja_no_carrinho:
+            qtd_total = carrinho_map[codigo]["qtd"]
+            c5.markdown(f"✅ **No Pedido: {qtd_total}**")
+
+        # ❌ FECHA O CARD
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
-df_filtrado = df_produtos[
-    df_produtos["descricao"].str.contains(busca, case=False, na=False) |
-    df_produtos["codigo"].str.contains(busca, case=False, na=False)
-]
+with tab2:
+    # =====================================================
+    # PEDIDO
+    # =====================================================
+    st.header("🧾 PEDIDOS-CARRINHO")
 
-for _, row in df_filtrado.iterrows():
-    c1, c2, c3, c4 = st.columns([1,3,2,2])
-    c1.write(row["codigo"])
-    c2.write(row["descricao"])
-    c3.write(f'R$ {row["preco"]:.2f}')
-    qtd = c4.number_input(
-    "Qtd",
-    value=1,
-    min_value=1,
-    step=1,
-    key=f"qtd_{row['codigo']}_{rc}"
-)
+    if st.session_state.carrinho and st.session_state.dados_cliente:
+        df_carrinho = pd.DataFrame(st.session_state.carrinho)
+        total_pedido = df_carrinho["total"].sum()
 
+        st.subheader("Itens no Pedido")
+        for i, item in enumerate(st.session_state.carrinho):
+            st.markdown('<div class="card-produto">', unsafe_allow_html=True)
+            col1, col2, col3, col4, col5, col6 = st.columns([1, 3, 2, 2, 2, 2])
+            col1.write(item["codigo"])
+            col2.write(item["descricao"])
+            col3.write(f'R$ {item["preco"]:.2f}')
+            
+            # Alterar quantidade
+            nova_qtd = col4.number_input("Qtd", value=item["qtd"], min_value=1, step=1, key=f"edit_qtd_{i}_{st.session_state.reset_counter}")
+            if col5.button("Atualizar Qtd", key=f"update_{i}"):
+                st.session_state.carrinho[i]["qtd"] = nova_qtd
+                st.session_state.carrinho[i]["total"] = nova_qtd * item["preco"]
+                st.success("Quantidade atualizada!")
+                st.rerun()
+            
+            # Remover produto
+            if col6.button("Remover", key=f"remove_{i}"):
+                del st.session_state.carrinho[i]
+                st.success("Produto removido!")
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+        # Após a lista interativa, adicione:
+        df_carrinho = pd.DataFrame(st.session_state.carrinho)
+        total_pedido = df_carrinho["total"].sum() if not df_carrinho.empty else 0     
 
-    if c4.button("Adicionar", key=f"add_{row['codigo']}"):
-        st.session_state.carrinho.append({
-            "codigo": row["codigo"],
-            "descricao": row["descricao"],
-            "qtd": qtd,
-            "preco": row["preco"],
-            "total": qtd * row["preco"]
-        })
-        st.success(f'{row["descricao"]} adicionado!')
+        st.subheader(f"💰 TOTAL: R$ {total_pedido:,.2f}")
 
-# =====================================================
-# PEDIDO
-# =====================================================
-st.header("🧾 Pedido")
+with tab3:
+    st.header("⚙️ FINALIZAÇÃO")
 
-if st.session_state.carrinho and st.session_state.dados_cliente:
+    if not st.session_state.carrinho or not st.session_state.dados_cliente:
+        st.info("É necessário cliente e produtos para finalizar.")
+        st.stop()
+
+    # 🔥 CRIA AQUI (resolve o erro)
     df_carrinho = pd.DataFrame(st.session_state.carrinho)
     total_pedido = df_carrinho["total"].sum()
+    condicao_pagamento = st.session_state.get("cond_pag", "")
+    observacoes = st.session_state.get("obs_pedido", "")
 
-    st.subheader("Itens no Pedido")
-    for i, item in enumerate(st.session_state.carrinho):
-        col1, col2, col3, col4, col5, col6 = st.columns([1, 3, 2, 2, 2, 2])
-        col1.write(item["codigo"])
-        col2.write(item["descricao"])
-        col3.write(f'R$ {item["preco"]:.2f}')
-        
-        # Alterar quantidade
-        nova_qtd = col4.number_input("Qtd", value=item["qtd"], min_value=1, step=1, key=f"edit_qtd_{i}_{st.session_state.reset_counter}")
-        if col5.button("Atualizar Qtd", key=f"update_{i}"):
-            st.session_state.carrinho[i]["qtd"] = nova_qtd
-            st.session_state.carrinho[i]["total"] = nova_qtd * item["preco"]
-            st.success("Quantidade atualizada!")
-            st.rerun()
-        
-        # Remover produto
-        if col6.button("Remover", key=f"remove_{i}"):
-            del st.session_state.carrinho[i]
-            st.success("Produto removido!")
-            st.rerun()
+    # =========================
+    # CAMPOS DA FINALIZAÇÃO
+    # =========================
+    condicao_pagamento = st.selectbox(
+        "Condição de Pagamento",
+        ["À Vista - PIX", "30% Adto + 30 dias", "30% Adto + 30/60", "30% Adto + 30/60/90", "Outro"],
+        key="cond_pag"
+    )
 
-    # Após a lista interativa, adicione:
-    df_carrinho = pd.DataFrame(st.session_state.carrinho)
-    total_pedido = df_carrinho["total"].sum() if not df_carrinho.empty else 0     
-
-    st.subheader(f"💰 TOTAL: R$ {total_pedido:,.2f}")
-
-    # Campos adicionais
-    condicao_pagamento = st.text_input("Condição de Pagamento", key=f"cond_{rc}")
-    observacoes = st.text_area("Observações", key=f"obs_{rc}")
+    observacoes = st.text_area(
+        "Observações do Pedido",
+        key="obs_pedido"
+    )
 
 
     # CSV com colunas Código;descrição,qtde,preco e nome CNPJ-data
@@ -500,8 +584,5 @@ Produtos:
 
     st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
 
-elif not st.session_state.dados_cliente:
-    st.info("Consulte um CNPJ para iniciar o pedido.")
-else:
 
-    st.info("Adicione produtos ao pedido.")
+
