@@ -448,33 +448,60 @@ div[data-testid="stVerticalBlock"] > div:has(.scroll-fix) {
 st.markdown("""
 <style>
 
-/* ===== SCROLL DO CARRINHO ===== */
-div[data-testid="stVerticalBlock"] > div:has(.scroll-carrinho) {
-    height: calc(100vh - 210px);
+/* ===== CONTAINER REAL DO CARRINHO ===== */
+section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("CARRINHO")) + div {
+    height: calc(100vh - 190px);
     overflow-y: auto;
     padding-right: 6px;
 }
 
 /* MOBILE */
 @media (max-width: 768px) {
-    div[data-testid="stVerticalBlock"] > div:has(.scroll-carrinho) {
-        height: calc(100vh - 150px) !important;
+    section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("CARRINHO")) + div {
+        height: calc(100vh - 140px) !important;
     }
 }
 
-/* TOTAL FIXO VISUAL */
+/* TOTAL FIXO */
 .total-box {
     background: white;
-    padding: 12px;
-    border-radius: 12px;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: 0 -3px 12px rgba(0,0,0,0.08);
     position: sticky;
     bottom: 0;
+    z-index: 10;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
+#BOTOES PEDIDO-CARRINHO
+
+st.markdown("""
+<style>
+
+/* 🔥 COLUNAS SEM MARGEM NO MOBILE */
+@media (max-width: 768px) {
+    div[data-testid="column"] {
+        padding-left: 0px !important;
+        padding-right: 0px !important;
+    }
+}
+
+/* BOTÕES REALMENTE FULL WIDTH */
+div[data-testid="stButton"] > button {
+    width: 100% !important;
+    display: block !important;
+}
+
+/* Remove espaço lateral padrão */
+div[data-testid="stButton"] {
+    width: 100% !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 
 tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
@@ -567,7 +594,7 @@ with tab2:
             st.markdown(f"<div style='text-align:right;margin-top:6px'><b>{len(st.session_state.carrinho)}</b><br>itens</div>", unsafe_allow_html=True)
 
         container_carrinho = st.container()
-        container_carrinho.markdown('<div class="scroll-carrinho"></div>', unsafe_allow_html=True)
+        # container_carrinho.markdown('<div class="scroll-carrinho"></div>', unsafe_allow_html=True)
 
         with container_carrinho:
 
