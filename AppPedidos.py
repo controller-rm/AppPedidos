@@ -342,19 +342,37 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+#SOLUÇÃO DEFINITIVA (desktop + mobile)
 st.markdown("""
 <style>
 
-/* 🔵 PRIMARY PADRÃO (Atualizar) */
-button[kind="primary"] {
-    background-color: #1976D2 !important;
-    color: white !important;
-    border-radius: 6px !important;
-    height: 42px !important;
+/* ===== BOTÕES STREAMLIT 100% LARGURA SEMPRE ===== */
+div[data-testid="stButton"] {
     width: 100% !important;
 }
 
-/* 🟢 ADICIONAR ➕ */
+div[data-testid="stButton"] > button {
+    width: 100% !important;
+    display: block !important;
+    border-radius: 8px !important;
+    height: 44px !important;
+    font-weight: 600 !important;
+}
+
+/* REMOVE LIMITAÇÃO DAS COLUNAS (O SEGREDO) */
+div[data-testid="column"] > div {
+    width: 100% !important;
+}
+
+/* ===== CORES ===== */
+
+/* 🔵 ATUALIZAR */
+button[kind="primary"] {
+    background-color: #1976D2 !important;
+    color: white !important;
+}
+
+/* 🟢 ADICIONAR */
 button[kind="primary"]:has(span:contains("Adicionar")) {
     background-color: #4CAF50 !important;
 }
@@ -363,16 +381,16 @@ button[kind="primary"]:has(span:contains("Adicionar")) {
 button[kind="secondary"] {
     background-color: #e53935 !important;
     color: white !important;
-    border-radius: 6px !important;
-    height: 42px !important;
 }
 
-/* Hover */
-button[kind="secondary"]:hover { background-color: #c62828 !important; }
+/* HOVER */
 button[kind="primary"]:hover { background-color: #1565C0 !important; }
+button[kind="secondary"]:hover { background-color: #c62828 !important; }
 
 </style>
 """, unsafe_allow_html=True)
+
+
 st.markdown("""
 <style>
 
@@ -637,12 +655,12 @@ with tab2:
                     key=f"edit_qtd_{i}_{st.session_state.reset_counter}"
                 )
 
-                if col5.button("🔄", key=f"update_{i}", type="primary"):
+                if col5.button("Atualizar - 🔄", key=f"update_{i}", type="primary"):
                     st.session_state.carrinho[i]["qtd"] = nova_qtd
                     st.session_state.carrinho[i]["total"] = nova_qtd * item["preco"]
                     st.rerun()
 
-                if col6.button("🗑️", key=f"remove_{i}", type="secondary"):
+                if col6.button("Remover - 🗑️", key=f"remove_{i}", type="secondary"):
                     del st.session_state.carrinho[i]
                     st.rerun()
 
