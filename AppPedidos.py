@@ -593,10 +593,39 @@ with tab1:
                 background:white;">
             """, unsafe_allow_html=True)
 
+
+
             c1, c2, c3, c4 = st.columns([1,3,2,2])
-            c1.write(codigo)
+            c1.markdown(
+            f"""
+            <div style="
+                font-size:18px;
+                font-weight:bold;
+                background:#f1f3f6;
+                padding:6px 8px;
+                border-radius:6px;
+                text-align:center;">SKU {codigo}
+            </div>
+            """, unsafe_allow_html=True)
+
+            #c1.write(codigo)
             c2.write(row["descricao"])
-            c3.write(f'R$ {preco:.2f}')
+            c3.markdown(
+                f"""
+                <div style="
+                    font-size:20px;
+                    font-weight:bold;
+                    color:#1f7a1f;
+                    background:#eef8ee;
+                    padding:6px 10px;
+                    border-radius:6px;
+                    text-align:center;">
+                    R$ {preco:.2f}
+                </div>
+                """,
+                unsafe_allow_html=True)
+
+            #c3.write(f'R$ {preco:.2f}')
             qtd = c4.number_input("Qtd", value=1, min_value=1, step=1, key=f"qtd_{codigo}_{rc}")
 
             # 👇 BOTÃO FORA DAS COLUNAS
@@ -647,9 +676,38 @@ with tab2:
                 st.markdown('<div class="card-produto">', unsafe_allow_html=True)
 
                 col1, col2, col3, col4 = st.columns([1, 3, 2, 2])
-                col1.write(item["codigo"])
+
+                col1.markdown(
+                f"""
+                <div style="
+                    font-size:18px;
+                    font-weight:bold;
+                    background:#f1f3f6;
+                    padding:6px 8px;
+                    border-radius:6px;
+                    text-align:center;">SKU {codigo}
+                </div>
+                """, unsafe_allow_html=True)
+
+                #col1.write(item["codigo"])
+                
                 col2.write(item["descricao"])
-                col3.write(f'R$ {item["preco"]:.2f}')
+                col3.markdown(
+                    f"""
+                    <div style="
+                        font-size:20px;
+                        font-weight:bold;
+                        color:#1f7a1f;
+                        background:#eef8ee;
+                        padding:6px 10px;
+                        border-radius:6px;
+                        text-align:center;">
+                        R$ {item['preco']:.2f}
+                    </div>
+                    """,
+                    unsafe_allow_html=True)
+
+                #col3.write(f'R$ {item["preco"]:.2f}')
 
                 nova_qtd = col4.number_input(
                     "Qtd",
