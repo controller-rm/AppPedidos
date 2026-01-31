@@ -773,8 +773,10 @@ with tab3:
 
 
     # CSV com colunas Código;descrição,qtde,preco e nome CNPJ-data
-    data_atual = datetime.now().strftime("%Y%m%d")
-    nome_csv = f"{cnpj}-{data_atual}.csv"
+    agora = datetime.now()
+    timestamp = agora.strftime("%d-%m-%Y_%H-%M-%S")
+
+    nome_csv = f"PEDIDO_ZIONNE_{cnpj}_{timestamp}.csv"
     csv_buffer = StringIO()
     df_carrinho[["codigo", "descricao", "qtd", "preco"]].to_csv(csv_buffer, sep=";", index=False)
     csv_content = csv_buffer.getvalue()
@@ -895,7 +897,11 @@ with tab3:
 
     # Gerar PDF
     pdf_bytes = gerar_pdf(st.session_state.dados_cliente, st.session_state.carrinho, total_pedido, condicao_pagamento, observacoes, cnpj, telefone, email, ie)
-    nome_pdf = f"pedido_{cnpj}-{data_atual}.pdf"
+    agora = datetime.now()
+    timestamp = agora.strftime("%d-%m-%Y_%H-%M-%S")
+
+    nome_pdf = f"PEDIDO_ZIONNE_{cnpj}_{timestamp}.pdf"
+
     st.download_button("📄 Baixar PDF", pdf_bytes, nome_pdf, mime="application/pdf")
 
 # =====================================================
@@ -998,6 +1004,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
