@@ -423,31 +423,58 @@ div[data-testid="stLinkButton"] a:hover {
 #SCROLL SÓ NA LISTA DE PRODUTOS TAB1 
 st.markdown("""
 <style>
+
+/* ALTURA INTELIGENTE MOBILE */
+@media (max-width: 768px) {
+    div[data-testid="stVerticalBlock"] > div:has(.scroll-fix) {
+        height: calc(100vh - 160px) !important;
+    }
+}
+
+/* DESKTOP */
 div[data-testid="stVerticalBlock"] > div:has(.scroll-fix) {
-    height: calc(100vh - 260px);  /* se adapta à tela */
+    height: calc(100vh - 220px);
     overflow-y: auto;
-    padding-right: 8px;
-    border: 1px solid #e6e6e6;
+    padding-right: 6px;
     border-radius: 10px;
     background: #fafafa;
 }
+
 </style>
-            
 """, unsafe_allow_html=True)
+
 
 #SCROLL SÓ NA LISTA DE PEDIDO-CARRINHO TAB2
 st.markdown("""
 <style>
+
+/* ===== SCROLL DO CARRINHO ===== */
 div[data-testid="stVerticalBlock"] > div:has(.scroll-carrinho) {
-    height: calc(100vh - 300px);
+    height: calc(100vh - 210px);
     overflow-y: auto;
-    padding-right: 8px;
-    border: 1px solid #e6e6e6;
-    border-radius: 10px;
-    background: #fafafa;
+    padding-right: 6px;
 }
+
+/* MOBILE */
+@media (max-width: 768px) {
+    div[data-testid="stVerticalBlock"] > div:has(.scroll-carrinho) {
+        height: calc(100vh - 150px) !important;
+    }
+}
+
+/* TOTAL FIXO VISUAL */
+.total-box {
+    background: white;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    position: sticky;
+    bottom: 0;
+}
+
 </style>
 """, unsafe_allow_html=True)
+
 
 
 tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
@@ -456,14 +483,21 @@ tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FI
 carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
 
 with tab1:
-    st.header("📦 PRODUTOS")
-    busca = st.text_input("Pesquisar por código ou descrição", key=f"busca_{rc}")
+    st.markdown("### 📦 PRODUTOS")
+
+    top1, top2 = st.columns([4,1])
+
+    with top1:
+        busca = st.text_input("🔎 Buscar produto", key=f"busca_{rc}", label_visibility="collapsed")
 
     df_filtrado = df_produtos[
         df_produtos["descricao"].str.contains(busca, case=False, na=False) |
         df_produtos["codigo"].str.contains(busca, case=False, na=False)
     ]
-    st.caption(f"{len(df_filtrado)} produtos encontrados")
+
+    with top2:
+        st.markdown(f"<div style='margin-top:8px;font-size:14px'><b>{len(df_filtrado)}</b><br>itens</div>", unsafe_allow_html=True)
+
 
     # 👇 CONTAINER NATIVO
     container_produtos = st.container()
@@ -520,22 +554,22 @@ with tab1:
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-
 with tab2:
-    st.header("🧾 PEDIDOS-CARRINHO")
+
+    st.markdown("### 🧾 CARRINHO")
 
     if st.session_state.carrinho and st.session_state.dados_cliente:
 
-        # 👇 Container real do Streamlit
+        top1, top2 = st.columns([4,1])
+        with top1:
+            st.caption("Itens adicionados")
+        with top2:
+            st.markdown(f"<div style='text-align:right;margin-top:6px'><b>{len(st.session_state.carrinho)}</b><br>itens</div>", unsafe_allow_html=True)
+
         container_carrinho = st.container()
         container_carrinho.markdown('<div class="scroll-carrinho"></div>', unsafe_allow_html=True)
 
         with container_carrinho:
-
-            df_carrinho = pd.DataFrame(st.session_state.carrinho)
-            total_pedido = df_carrinho["total"].sum()
-
-            st.subheader("Itens no Pedido")
 
             for i, item in enumerate(st.session_state.carrinho):
 
@@ -554,33 +588,29 @@ with tab2:
                     key=f"edit_qtd_{i}_{st.session_state.reset_counter}"
                 )
 
-                # 🔵 Atualizar
-                atualizar = col5.button("🔄 Atualizar Qtd", key=f"update_{i}", type="primary")
-
-                if atualizar:
+                if col5.button("🔄", key=f"update_{i}", type="primary"):
                     st.session_state.carrinho[i]["qtd"] = nova_qtd
                     st.session_state.carrinho[i]["total"] = nova_qtd * item["preco"]
-                    st.success("Quantidade atualizada!")
                     st.rerun()
 
-                # 🔴 Remover
-                remover = col6.button("🗑️ Remover", key=f"remove_{i}", type="secondary")
-
-                if remover:
+                if col6.button("🗑️", key=f"remove_{i}", type="secondary"):
                     del st.session_state.carrinho[i]
-                    st.success("Produto removido!")
                     st.rerun()
 
                 st.markdown('</div>', unsafe_allow_html=True)
 
-        # 🔽 TOTAL FICA FORA DO SCROLL (fixo embaixo)
+        # TOTAL FIXO FORA DO SCROLL
         df_carrinho = pd.DataFrame(st.session_state.carrinho)
         total_pedido = df_carrinho["total"].sum() if not df_carrinho.empty else 0
 
-        st.subheader(f"💰 TOTAL: R$ {total_pedido:,.2f}")
+        st.markdown(
+            f"<div class='total-box'><h3>💰 TOTAL: R$ {total_pedido:,.2f}</h3></div>",
+            unsafe_allow_html=True
+        )
 
     else:
         st.info("Nenhum produto adicionado ao pedido ainda.")
+
 
 
 with tab3:
@@ -837,6 +867,8 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
+
 
 
 
