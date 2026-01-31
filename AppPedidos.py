@@ -14,7 +14,8 @@ st.title("🛒 Emissão de Pedido - Zionne")
 # ==============================
 # NOVO PEDIDO (RESET REAL)
 # ==============================
-if st.button("🆕 Novo Pedido"):
+if st.button("🆕 Novo Pedido", type="primary", use_container_width=True):
+
     rc = st.session_state.get("reset_counter", 0) + 1  # guarda próximo número
     st.session_state.clear()  # limpa tudo
     st.session_state.reset_counter = rc  # restaura contador
@@ -269,15 +270,47 @@ ie = col4.text_input("Inscrição Estadual", key=f"ie_{rc}")
 
 telefone_zionne = st.text_input("Telefone WhatsApp Zionne", key=f"tel_zionne_{rc}")
 
-
-if st.button("Consultar CNPJ"):
+# Consulta CNPJ
+if st.button("Consultar CNPJ", type="primary", use_container_width=True):
     dados, erro = consulta_cnpj(cnpj)
     if erro:
         st.error(erro)
+        # 🔥 NOVO: Opção para entrada manual
+        st.warning("CNPJ não encontrado. Insira os dados manualmente abaixo.")
+        st.session_state.dados_cliente = None  # Reseta para evitar conflitos
     else:
         st.session_state.dados_cliente = dados
         st.success("Cliente localizado!")
 
+# 🔥 NOVO: Campos para entrada manual (sempre visíveis, mas preenchidos se consulta funcionar)
+if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True) or st.session_state.dados_cliente is None:
+    st.subheader("📝 Inserir Dados do Cliente Manualmente")
+    
+    razao_manual = st.text_input("Razão Social", value=st.session_state.dados_cliente.get("razao", "") if st.session_state.dados_cliente else "", key=f"razao_manual_{rc}")
+    logradouro_manual = st.text_input("Logradouro", value=st.session_state.dados_cliente.get("logradouro", "") if st.session_state.dados_cliente else "", key=f"logradouro_manual_{rc}")
+    numero_manual = st.text_input("Número", value=st.session_state.dados_cliente.get("numero", "") if st.session_state.dados_cliente else "", key=f"numero_manual_{rc}")
+    bairro_manual = st.text_input("Bairro", value=st.session_state.dados_cliente.get("bairro", "") if st.session_state.dados_cliente else "", key=f"bairro_manual_{rc}")
+    municipio_manual = st.text_input("Município", value=st.session_state.dados_cliente.get("municipio", "") if st.session_state.dados_cliente else "", key=f"municipio_manual_{rc}")
+    uf_manual = st.selectbox("UF", ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"], 
+                             index=["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"].index(st.session_state.dados_cliente.get("uf", "SP")) if st.session_state.dados_cliente else 24, key=f"uf_manual_{rc}")
+    cep_manual = st.text_input("CEP", value=st.session_state.dados_cliente.get("cep", "") if st.session_state.dados_cliente else "", key=f"cep_manual_{rc}")
+    
+    if st.button("Salvar Dados Manuais", type="primary", use_container_width=True):
+        if razao_manual and logradouro_manual and municipio_manual:
+            st.session_state.dados_cliente = {
+                "razao": razao_manual,
+                "logradouro": logradouro_manual,
+                "numero": numero_manual,
+                "bairro": bairro_manual,
+                "municipio": municipio_manual,
+                "uf": uf_manual,
+                "cep": cep_manual
+            }
+            st.success("Dados do cliente salvos manualmente!")
+        else:
+            st.error("Preencha pelo menos Razão Social, Logradouro e Município.")
+
+# Exibe os dados (seja da consulta ou manual)
 if st.session_state.dados_cliente:
     d = st.session_state.dados_cliente
     endereco = f'{d["logradouro"]}, {d["numero"]} - {d["bairro"]} | {d["municipio"]}/{d["uf"]} - CEP {d["cep"]}'
@@ -306,26 +339,87 @@ st.markdown("""
     border: 2px solid #4CAF50 !important;  /* Borda verde para destacar */
     border-radius: 5px !important;
 }
-.stButton button {
-    background-color: #4CAF50 !important;  /* Verde para o botão */
-    color: white !important;
-    border: none !important;
-    border-radius: 5px !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# Adicione:
 st.markdown("""
 <style>
-.stButton button {
-    background-color: #4CAF50 !important;  /* Verde */
+
+/* 🔵 PRIMARY PADRÃO (Atualizar) */
+button[kind="primary"] {
+    background-color: #1976D2 !important;
     color: white !important;
-    border: none !important;
-    border-radius: 5px !important;
+    border-radius: 6px !important;
+    height: 42px !important;
+    width: 100% !important;
 }
+
+/* 🟢 ADICIONAR ➕ */
+button[kind="primary"]:has(span:contains("Adicionar")) {
+    background-color: #4CAF50 !important;
+}
+
+/* 🔴 REMOVER */
+button[kind="secondary"] {
+    background-color: #e53935 !important;
+    color: white !important;
+    border-radius: 6px !important;
+    height: 42px !important;
+}
+
+/* Hover */
+button[kind="secondary"]:hover { background-color: #c62828 !important; }
+button[kind="primary"]:hover { background-color: #1565C0 !important; }
+
 </style>
 """, unsafe_allow_html=True)
+st.markdown("""
+<style>
+
+/* 🟠 NOVO PEDIDO */
+button[kind="primary"] span:contains("Novo Pedido") {
+    background-color: #FB8C00 !important;
+    color: white !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+
+st.markdown("""
+<style>
+
+/* ===== BOTÕES WHATSAPP DESTAQUE ===== */
+div[data-testid="stLinkButton"] a {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    padding: 16px 12px !important;
+    border-radius: 12px !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15) !important;
+    transition: all 0.2s ease-in-out !important;
+    margin-top: 10px !important;
+}
+
+/* 🌟 Cliente */
+a[href*="wa.me"] {
+    background: linear-gradient(90deg, #25D366, #1ebe5d) !important;
+    color: white !important;
+    border: none !important;
+}
+
+/* ✨ Hover efeito */
+div[data-testid="stLinkButton"] a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25) !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 
 tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
 
@@ -343,6 +437,7 @@ with tab1:
         df_produtos["descricao"].str.contains(busca, case=False, na=False) |
         df_produtos["codigo"].str.contains(busca, case=False, na=False)
     ]
+    st.caption(f"{len(df_filtrado)} produtos encontrados")
 
     # 🔥 MAPA DO CARRINHO
     carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
@@ -379,7 +474,8 @@ with tab1:
         qtd = c4.number_input("Qtd", value=1, min_value=1, step=1, key=f"qtd_{codigo}_{rc}")
 
         # 🔘 BOTÃO ADICIONAR
-        if c5.button("Adicionar ➕", key=f"add_{codigo}"):
+        if c5.button("Adicionar ➕", key=f"add_{codigo}", type="primary"):
+
             if ja_no_carrinho:
                 idx = next(i for i, item in enumerate(st.session_state.carrinho) if item["codigo"] == codigo)
                 st.session_state.carrinho[idx]["qtd"] += qtd
@@ -400,6 +496,7 @@ with tab1:
         # 🟢 MOSTRA QUANTIDADE SE JÁ ESTIVER NO PEDIDO
         if ja_no_carrinho:
             qtd_total = carrinho_map[codigo]["qtd"]
+            st.markdown("🟢 **Este produto já está no pedido**")
             c5.markdown(f"✅ **No Pedido: {qtd_total}**")
 
         # ❌ FECHA O CARD
@@ -425,19 +522,38 @@ with tab2:
             col3.write(f'R$ {item["preco"]:.2f}')
             
             # Alterar quantidade
+            # Alterar quantidade
             nova_qtd = col4.number_input("Qtd", value=item["qtd"], min_value=1, step=1, key=f"edit_qtd_{i}_{st.session_state.reset_counter}")
-            if col5.button("Atualizar Qtd", key=f"update_{i}"):
+            
+            # 🔵 BOTÃO ATUALIZAR QTD (com classe customizada)
+            with col5:
+                st.markdown('<div class="btn-update">', unsafe_allow_html=True)
+                atualizar = col5.button("🔄 Atualizar Qtd", key=f"update_{i}", type="primary")
+
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            if atualizar:
                 st.session_state.carrinho[i]["qtd"] = nova_qtd
                 st.session_state.carrinho[i]["total"] = nova_qtd * item["preco"]
                 st.success("Quantidade atualizada!")
                 st.rerun()
             
-            # Remover produto
-            if col6.button("Remover", key=f"remove_{i}"):
+            # 🔴 BOTÃO REMOVER (com classe customizada)
+            with col6:
+                
+                st.markdown('<div class="btn-remove">', unsafe_allow_html=True)
+                remover = col6.button("🗑️ Remover", key=f"remove_{i}", type="secondary")
+
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            if remover:
                 del st.session_state.carrinho[i]
                 st.success("Produto removido!")
                 st.rerun()
+
+
             st.markdown('</div>', unsafe_allow_html=True)
+
         # Após a lista interativa, adicione:
         df_carrinho = pd.DataFrame(st.session_state.carrinho)
         total_pedido = df_carrinho["total"].sum() if not df_carrinho.empty else 0     
@@ -572,8 +688,11 @@ Produtos:
     mensagem_zionne += f"\nTOTAL: R$ {total_pedido:.2f}\n\nCSV:\n{csv_content}"
 
     # Link para o cliente
-    link_cliente = f"https://wa.me/55{telefone_limpo}?text={quote(mensagem_cliente)}"
-    st.link_button("📲 Enviar Pedido para Cliente no WhatsApp", link_cliente)
+    if telefone_limpo:
+        link_cliente = f"https://wa.me/55{telefone_limpo}?text={quote(mensagem_cliente)}"
+        st.link_button("📲 Enviar Pedido para Cliente no WhatsApp", link_cliente)
+    else:
+        st.warning("Informe o telefone do cliente para envio via WhatsApp.")
 
     # Link para Zionne
     if telefone_zionne_limpo:
@@ -583,6 +702,9 @@ Produtos:
         st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
     st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
+
+
 
 
 
