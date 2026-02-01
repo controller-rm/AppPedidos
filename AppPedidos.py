@@ -555,7 +555,7 @@ with tab1:
     top1, top2 = st.columns([4,1])
 
     with top1:
-        busca = st.text_input("🔎 Buscar produto", key=f"busca_{rc}", label_visibility="collapsed")
+        busca = st.text_input("🔎 Buscar produto", key=f"busca_{rc}", label_visibility="visible")
 
     df_filtrado = df_produtos[
         df_produtos["descricao"].str.contains(busca, case=False, na=False) |
@@ -1004,6 +1004,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
