@@ -735,9 +735,10 @@ with tab2:
         total_pedido = df_carrinho["total"].sum() if not df_carrinho.empty else 0
 
         st.markdown(
-            f"<div class='total-box'><h3>💰 TOTAL: R$ {total_pedido:,.2f}</h3></div>",
+            f"<div class='total-box'><h3>💰 TOTAL: R$ {total_pedido:,.2f}</h3>",
             unsafe_allow_html=True
         )
+
 
     else:
         st.info("Nenhum produto adicionado ao pedido ainda.")
@@ -755,6 +756,7 @@ with tab3:
     df_carrinho = pd.DataFrame(st.session_state.carrinho)
     total_pedido = df_carrinho["total"].sum()
     condicao_pagamento = st.session_state.get("cond_pag", "")
+    tipo_Frete = st.session_state.get("frete", "")
     observacoes = st.session_state.get("obs_pedido", "")
 
     # =========================
@@ -766,11 +768,15 @@ with tab3:
         key="cond_pag"
     )
 
+    tipo_Frete = st.selectbox(
+        "Tipo Frete",
+        ["FOB - Por conta do cliente", "CIF", "FOB + CIF"],
+        key="frete"
+    )
     observacoes = st.text_area(
         "Observações do Pedido",
         key="obs_pedido"
     )
-
 
     # CSV com colunas Código;descrição,qtde,preco e nome CNPJ-data
     agora = datetime.now()
@@ -778,7 +784,19 @@ with tab3:
 
     nome_csv = f"PEDIDO_ZIONNE_{cnpj}_{timestamp}.csv"
     csv_buffer = StringIO()
-    df_carrinho[["codigo", "descricao", "qtd", "preco"]].to_csv(csv_buffer, sep=";", index=False)
+
+    # Cabeçalho do pedido
+    csv_buffer.write(f"CLIENTE;{st.session_state.dados_cliente['razao']}\n")
+    csv_buffer.write(f"CNPJ;{cnpj}\n")
+    csv_buffer.write(f"COND_PAG;{condicao_pagamento}\n")
+    csv_buffer.write(f"TIPO_FRETE;{tipo_Frete}\n")
+    csv_buffer.write(f"TOTAL_PEDIDO;{total_pedido:.2f}\n")
+    csv_buffer.write("\nITENS\n")
+
+    df_carrinho[["codigo", "descricao", "qtd", "preco", "total"]].to_csv(
+        csv_buffer, sep=";", index=False
+    )
+
     csv_content = csv_buffer.getvalue()
     st.download_button("📥 Baixar CSV", csv_content, nome_csv, mime="text/csv")
 
@@ -801,7 +819,7 @@ with tab3:
 
 
     # ================= FUNÇÃO GERAR PDF =================
-    def gerar_pdf(dados_cliente, carrinho, total, cond_pag, obs, cnpj, telefone, email, ie):
+    def gerar_pdf(dados_cliente, carrinho, total, cond_pag, frete, obs, cnpj, telefone, email, ie):
 
         pdf = PedidoPDF()
         pdf.add_page()
@@ -890,13 +908,21 @@ with tab3:
         # ================= PAGAMENTO / OBS =================
         pdf.set_font("Arial", "", 9)
         pdf.multi_cell(0, 5, f"Condição de Pagamento: {cond_pag}")
+        pdf.ln(2)
+
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(0, 6, "INFORMAÇÕES DE ENTREGA", 0, 1)
+
+        pdf.set_font("Arial", "", 9)
+        pdf.multi_cell(0, 5, f"Tipo de Frete: {frete}")
+
         pdf.multi_cell(0, 5, f"Observações: {obs}")
 
         return pdf.output(dest='S').encode('latin1')
 
 
     # Gerar PDF
-    pdf_bytes = gerar_pdf(st.session_state.dados_cliente, st.session_state.carrinho, total_pedido, condicao_pagamento, observacoes, cnpj, telefone, email, ie)
+    pdf_bytes = gerar_pdf(st.session_state.dados_cliente, st.session_state.carrinho, total_pedido, condicao_pagamento, tipo_Frete, observacoes, cnpj, telefone, email, ie)
     agora = datetime.now()
     timestamp = agora.strftime("%d-%m-%Y_%H-%M-%S")
 
@@ -929,8 +955,9 @@ E-mail: {email}
 {d["municipio"]}/{d["uf"]} - CEP {d["cep"]}
 
 ━━━━━━━━━━━━━━━━━━
-💳 *PAGAMENTO*
-{condicao_pagamento}
+🚚 *FRETE:* {tipo_Frete}
+💳 *PAGAMENTO:* {condicao_pagamento}
+
 
 📝 *OBSERVAÇÕES*
 {observacoes if observacoes else "—"}
@@ -968,7 +995,9 @@ EMAIL: {email}
 {d["logradouro"]}, {d["numero"]} - {d["bairro"]}
 {d["municipio"]}/{d["uf"]} - CEP {d["cep"]}
 
-💳 PAGAMENTO: {condicao_pagamento}
+🚚 *FRETE:* {tipo_Frete}
+💳 *PAGAMENTO:* {condicao_pagamento}
+
 📝 OBS: {observacoes if observacoes else "—"}
 
 ━━━━━━━━━━━━━━━━━━
@@ -1004,6 +1033,8 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
+
 
 
 
