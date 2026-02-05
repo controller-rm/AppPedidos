@@ -545,9 +545,9 @@ div[data-testid="stButton"] {
 
 from streamlit_qrcode_scanner import qrcode_scanner
 
-def set_qr_code(value, key):
-    st.session_state[key] = value
-
+# Estado da câmera
+if "camera_on" not in st.session_state:
+    st.session_state.camera_on = False
 
 tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
 
@@ -558,37 +558,33 @@ with tab1:
 
     st.markdown("### 📦 PRODUTOS")
 
-    top1, top2 = st.columns([4,1])
     busca_key = f"busca_{rc}"
-    qr_pending_key = f"qr_pending_{rc}"
 
-    # Se existe QR lido, aplica no campo ANTES do widget nascer
-    if qr_pending_key in st.session_state:
-        st.session_state[busca_key] = st.session_state[qr_pending_key]
-        del st.session_state[qr_pending_key]
+    # Layout busca + botão QR
+    colBusca, colQR,top2 = st.columns([4,1])
 
-    with top1:
-        colBusca, colQR = st.columns([4,1])
+    # 🔎 Campo de busca
+    with colBusca:
+        busca = st.text_input("🔎 Buscar produto", key=busca_key)
 
-        # 🔎 Campo de busca normal
-        with colBusca:
-            busca = st.text_input("🔎 Buscar produto", key=busca_key)
+    # 📷 Botão que liga/desliga câmera
+    with colQR:
+        if st.button("📷", use_container_width=True):
+            st.session_state.camera_on = not st.session_state.camera_on
 
+    # 📷 Scanner aparece só se estiver ativo
+    if st.session_state.camera_on:
+        st.info("Aponte a câmera para o QR Code")
 
+        qr_code = qrcode_scanner()
 
-        # 📷 Leitor QR
-        with colQR:
-            st.markdown("### 📷")
-            qr_code = qrcode_scanner()
+        if qr_code:
+            st.session_state[busca_key] = qr_code   # preenche o campo
+            st.session_state.camera_on = False      # desliga câmera
+            st.success(f"Código lido: {qr_code}")
+            st.rerun()
 
-            if qr_code:
-                st.session_state[qr_pending_key] = qr_code
-                st.success(f"QR lido: {qr_code}")
-                st.rerun()
-
-
-
-    # 🔍 Filtro
+    # 🔍 Filtro de produtos
     df_filtrado = df_produtos[
         df_produtos["descricao"].str.contains(busca, case=False, na=False) |
         df_produtos["codigo"].astype(str).str.contains(busca, case=False, na=False)
@@ -1065,6 +1061,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
