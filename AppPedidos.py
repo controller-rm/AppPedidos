@@ -542,6 +542,25 @@ div[data-testid="stButton"] {
 
 </style>
 """, unsafe_allow_html=True)
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import cv2
+import numpy as np
+import av
+
+class QRScanner(VideoTransformerBase):
+    def __init__(self):
+        self.last_code = None
+
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        detector = cv2.QRCodeDetector()
+
+        data, bbox, _ = detector.detectAndDecode(img)
+
+        if data:
+            self.last_code = data
+
+        return img
 
 
 tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
@@ -555,7 +574,26 @@ with tab1:
     top1, top2 = st.columns([4,1])
 
     with top1:
-        busca = st.text_input("🔎 Buscar produto", key=f"busca_{rc}", label_visibility="visible")
+        #busca = st.text_input("🔎 Buscar produto", key=f"busca_{rc}", label_visibility="visible")
+        colBusca, colQR = st.columns([4,1])
+
+        with colBusca:
+            busca = st.text_input("Pesquisar por código ou descrição", key=f"busca_{rc}")
+
+        with colQR:
+            st.markdown("### 📷 QR")
+            ctx = webrtc_streamer(
+                key="qr-scanner",
+                video_transformer_factory=QRScanner,
+                media_stream_constraints={"video": True, "audio": False},
+                async_transform=True,
+            )
+
+            if ctx.video_transformer:
+                code = ctx.video_transformer.last_code
+                if code:
+                    st.session_state[f"busca_{rc}"] = code
+                    st.success(f"QR lido: {code}")
 
     df_filtrado = df_produtos[
         df_produtos["descricao"].str.contains(busca, case=False, na=False) |
@@ -1033,6 +1071,8 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
+
 
 
 
