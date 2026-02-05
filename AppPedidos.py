@@ -555,21 +555,25 @@ tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FI
 carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
 
 with tab1:
+
     st.markdown("### 📦 PRODUTOS")
 
     top1, top2 = st.columns([4,1])
+    busca_key = f"busca_{rc}"
+    qr_pending_key = f"qr_pending_{rc}"
+
+    # Se existe QR lido, aplica no campo ANTES do widget nascer
+    if qr_pending_key in st.session_state:
+        st.session_state[busca_key] = st.session_state[qr_pending_key]
+        del st.session_state[qr_pending_key]
 
     with top1:
         colBusca, colQR = st.columns([4,1])
 
         # 🔎 Campo de busca normal
         with colBusca:
-            busca_key = f"busca_{rc}"
+            busca = st.text_input("🔎 Buscar produto", key=busca_key)
 
-            busca = st.text_input(
-                "🔎 Buscar produto",
-                key=busca_key
-            )
 
 
         # 📷 Leitor QR
@@ -577,10 +581,11 @@ with tab1:
             st.markdown("### 📷")
             qr_code = qrcode_scanner()
 
-            if qr_code and st.session_state.get(busca_key) != qr_code:
-                set_qr_code(qr_code, busca_key)
+            if qr_code:
+                st.session_state[qr_pending_key] = qr_code
                 st.success(f"QR lido: {qr_code}")
                 st.rerun()
+
 
 
     # 🔍 Filtro
@@ -1060,8 +1065,6 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
-
-
 
 
 
