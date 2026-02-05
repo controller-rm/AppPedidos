@@ -545,6 +545,8 @@ div[data-testid="stButton"] {
 
 from streamlit_qrcode_scanner import qrcode_scanner
 
+def set_qr_code(value, key):
+    st.session_state[key] = value
 
 
 tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
@@ -562,21 +564,24 @@ with tab1:
 
         # 🔎 Campo de busca normal
         with colBusca:
+            busca_key = f"busca_{rc}"
+
             busca = st.text_input(
                 "🔎 Buscar produto",
-                key=f"busca_{rc}",
-                label_visibility="visible"
+                key=busca_key
             )
+
 
         # 📷 Leitor QR
         with colQR:
             st.markdown("### 📷")
             qr_code = qrcode_scanner()
 
-            if qr_code:
-                st.session_state[f"busca_{rc}"] = qr_code
+            if qr_code and st.session_state.get(busca_key) != qr_code:
+                set_qr_code(qr_code, busca_key)
                 st.success(f"QR lido: {qr_code}")
                 st.rerun()
+
 
     # 🔍 Filtro
     df_filtrado = df_produtos[
@@ -1055,8 +1060,6 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
-
-
 
 
 
