@@ -558,6 +558,9 @@ with tab1:
 
     st.markdown("### 📦 PRODUTOS")
 
+    top1, top2 = st.columns([4,1])  # 🔥 ADICIONE ISSO
+
+
     busca_key = f"busca_{rc}"
     qr_buffer_key = f"qr_buffer_{rc}"
     
@@ -1065,6 +1068,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
