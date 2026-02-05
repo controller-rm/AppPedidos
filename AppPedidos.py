@@ -561,7 +561,8 @@ with tab1:
     busca_key = f"busca_{rc}"
 
     # Layout busca + botão QR
-    colBusca, colQR,top2 = st.columns([4,1])
+    colBusca, colQR, top2 = st.columns([4,1,1])
+
 
     # 🔎 Campo de busca
     with colBusca:
@@ -1061,6 +1062,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
