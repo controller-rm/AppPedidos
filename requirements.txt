@@ -2,3 +2,6 @@ streamlit>=1.30.0
 pandas>=2.0.0
 requests>=2.31.0
 fpdf>=1.7.2
+streamlit-webrtc==0.47.7
+opencv-python-headless==4.9.0.80
+av==11.0.0
