@@ -674,13 +674,15 @@ with tab1:
         st.session_state.pop("clear_search")
 
     # Layout busca + botão QR
+    # ============================
+    # BUSCA + SCANNER
+    # ============================
+
     st.markdown('<div class="search-row-marker"></div>', unsafe_allow_html=True)
     colBusca, colQR, top2 = st.columns([6, 1, 1])
 
     # 🔎 Campo de busca
     with colBusca:
-        # 🔁 aplica valor vindo do scanner ANTES do input nascer
-
         busca = st.text_input(
             "🔎 Buscar produto",
             placeholder="Buscar por SKU ou descrição...",
@@ -688,8 +690,7 @@ with tab1:
         )
         busca = busca or ""
 
-
-    # 📷 Controles do scanner
+    # 📷 Botão Scanner
     with colQR:
         if not st.session_state.camera_on:
             if st.button("📷 Scanner", type="primary", use_container_width=True):
@@ -698,18 +699,19 @@ with tab1:
             if st.button("❌ Fechar", type="secondary", use_container_width=True):
                 st.session_state.camera_on = False
 
-    # 📷 Scanner ativo
+    # ============================
+    # SCANNER ATIVO
+    # ============================
     if st.session_state.camera_on:
         st.caption("📷 Aponte a câmera para o QR Code")
 
         raw_qr = qrcode_scanner()
         qr_code = normaliza_codigo_qr(raw_qr)
 
-
         if qr_code:
             now = time.time()
 
-            # evita leitura duplicada rápida
+            # evita leitura duplicada
             if (
                 qr_code != st.session_state.last_qr
                 or now - st.session_state.last_scan_time > 1
@@ -717,15 +719,13 @@ with tab1:
                 st.session_state.last_qr = qr_code
                 st.session_state.last_scan_time = now
 
-                # 🔥 atualiza o campo de busca (via estado auxiliar)
-                st.session_state.scan_value = str(qr_code)
+                # 🔥 injeta no campo de busca
+                st.session_state.scan_value = qr_code
 
-
-                # fecha a câmera (ganho de performance)
+                # fecha câmera
                 st.session_state.camera_on = False
 
                 produto = df_produtos[df_produtos["codigo"] == qr_code]
-
 
                 if not produto.empty:
                     row = produto.iloc[0]
@@ -757,12 +757,17 @@ with tab1:
 
                     st.toast(f"✅ {codigo} adicionado ao pedido", icon="📦")
 
-                    # 🔥 ADICIONE ESTAS DUAS LINHAS
+                    # limpa busca e atualiza tela
                     st.session_state.clear_search = True
                     st.rerun()
 
                 else:
                     st.warning(f"⚠️ Produto {qr_code} não encontrado")
+
+
+                    # 🔥 ADICIONE ESTAS DUAS LINHAS
+                    st.session_state.clear_search = True
+                    st.rerun()
 
 
     # 🔍 Filtro de produtos
