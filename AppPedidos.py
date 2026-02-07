@@ -643,6 +643,9 @@ if "last_qr" not in st.session_state:
 if "last_scan_time" not in st.session_state:
     st.session_state.last_scan_time = 0
 
+if "busca_valor" not in st.session_state:
+    st.session_state.busca_valor = ""
+
 
 
 tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
@@ -670,7 +673,8 @@ with tab1:
         busca = st.text_input(
             "🔎 Buscar produto",
             placeholder="Buscar por SKU ou descrição...",
-            key=busca_key
+            key=busca_key,
+            value=st.session_state.busca_valor
         )
 
     # 📷 Controles do scanner
@@ -682,9 +686,9 @@ with tab1:
             if st.button("❌ Fechar", type="secondary", use_container_width=True):
                 st.session_state.camera_on = False
 
-    # 📷 Scanner ativo (modo contínuo)
+    # 📷 Scanner ativo
     if st.session_state.camera_on:
-        st.info("Aponte a câmera para o QR Code")
+        st.caption("📷 Aponte a câmera para o QR Code")
 
         qr_code = qrcode_scanner()
 
@@ -694,17 +698,53 @@ with tab1:
             # evita leitura duplicada rápida
             if (
                 qr_code != st.session_state.last_qr
-                or now - st.session_state.last_scan_time > 1.2
+                or now - st.session_state.last_scan_time > 1
             ):
                 st.session_state.last_qr = qr_code
                 st.session_state.last_scan_time = now
-                # 🔥 PREENCHE O CAMPO BUSCA
-                st.session_state[busca_key] = str(qr_code)
 
-                # Fecha a câmera automaticamente (ganho enorme de performance)
+                # 🔥 atualiza o campo de busca (via estado auxiliar)
+                st.session_state.busca_valor = str(qr_code)
+
+                # fecha a câmera (ganho de performance)
                 st.session_state.camera_on = False
 
-                st.toast(f"🔎 SKU {qr_code} localizado", icon="📦")
+                produto = df_produtos[
+                    df_produtos["codigo"].astype(str) == str(qr_code)
+                ]
+
+                if not produto.empty:
+                    row = produto.iloc[0]
+                    codigo = row["codigo"]
+                    preco = row["preco"]
+
+                    carrinho_map = {
+                        item["codigo"]: item
+                        for item in st.session_state.carrinho
+                    }
+
+                    if codigo in carrinho_map:
+                        idx = next(
+                            i for i, item in enumerate(st.session_state.carrinho)
+                            if item["codigo"] == codigo
+                        )
+                        st.session_state.carrinho[idx]["qtd"] += 1
+                        st.session_state.carrinho[idx]["total"] = (
+                            st.session_state.carrinho[idx]["qtd"] * preco
+                        )
+                    else:
+                        st.session_state.carrinho.append({
+                            "codigo": codigo,
+                            "descricao": row["descricao"],
+                            "qtd": 1,
+                            "preco": preco,
+                            "total": preco
+                        })
+
+                    st.toast(f"✅ {codigo} adicionado ao pedido", icon="📦")
+                else:
+                    st.warning(f"⚠️ Produto {qr_code} não encontrado")
+
 
                 produto = df_produtos[df_produtos["codigo"].astype(str) == str(qr_code)]
 
@@ -1256,3 +1296,4 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
