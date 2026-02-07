@@ -644,9 +644,11 @@ section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(di
 """, unsafe_allow_html=True)
 
 from streamlit_qrcode_scanner import qrcode_scanner
-
 import time
 
+# ============================
+# ESTADOS INICIAIS
+# ============================
 if "camera_on" not in st.session_state:
     st.session_state.camera_on = False
 
@@ -656,41 +658,47 @@ if "last_qr" not in st.session_state:
 if "last_scan_time" not in st.session_state:
     st.session_state.last_scan_time = 0
 
-tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
+if "scan_value" not in st.session_state:
+    st.session_state.scan_value = ""
+
+tab1, tab2, tab3 = st.tabs(
+    ["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"]
+)
 
 # Mapa de produtos já adicionados
 carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
 
+# ============================
+# ABA PRODUTOS
+# ============================
 with tab1:
 
     st.markdown("### 📦 PRODUTOS")
 
     busca_key = f"busca_{rc}"
-    if "scan_value" in st.session_state:
-        st.session_state[busca_key] = st.session_state.pop("scan_value")
-        
-    if "clear_search" in st.session_state:
-        st.session_state[busca_key] = ""
-        st.session_state.pop("clear_search")
+
+    # 🔐 Injeção segura do valor escaneado (ANTES do widget)
+    if st.session_state.scan_value:
+        st.session_state[busca_key] = st.session_state.scan_value
+        st.session_state.scan_value = ""
 
     # Layout busca + botão QR
-    # ============================
-    # BUSCA + SCANNER
-    # ============================
-
     st.markdown('<div class="search-row-marker"></div>', unsafe_allow_html=True)
     colBusca, colQR, top2 = st.columns([6, 1, 1])
 
-    # 🔎 Campo de busca
+    # ============================
+    # CAMPO DE BUSCA
+    # ============================
     with colBusca:
         busca = st.text_input(
             "🔎 Buscar produto",
             placeholder="Buscar por SKU ou descrição...",
             key=busca_key
-        )
-        busca = busca or ""
+        ) or ""
 
-    # 📷 Botão Scanner
+    # ============================
+    # BOTÃO SCANNER
+    # ============================
     with colQR:
         if not st.session_state.camera_on:
             if st.button("📷 Scanner", type="primary", use_container_width=True):
@@ -711,7 +719,7 @@ with tab1:
         if qr_code:
             now = time.time()
 
-            # evita leitura duplicada
+            # Evita leitura duplicada
             if (
                 qr_code != st.session_state.last_qr
                 or now - st.session_state.last_scan_time > 1
@@ -719,10 +727,10 @@ with tab1:
                 st.session_state.last_qr = qr_code
                 st.session_state.last_scan_time = now
 
-                # 🔥 injeta no campo de busca
+                # 👉 Guarda valor para o próximo ciclo
                 st.session_state.scan_value = qr_code
 
-                # fecha câmera
+                # Fecha câmera
                 st.session_state.camera_on = False
 
                 produto = df_produtos[df_produtos["codigo"] == qr_code]
@@ -756,24 +764,18 @@ with tab1:
                         })
 
                     st.toast(f"✅ {codigo} adicionado ao pedido", icon="📦")
-
-                    # limpa busca e atualiza tela
-                    st.session_state.clear_search = True
                     st.rerun()
 
                 else:
                     st.warning(f"⚠️ Produto {qr_code} não encontrado")
-
-
-                    # 🔥 ADICIONE ESTAS DUAS LINHAS
-                    st.session_state.clear_search = True
                     st.rerun()
 
-
-    # 🔍 Filtro de produtos
+    # ============================
+    # FILTRO DE PRODUTOS
+    # ============================
     df_filtrado = df_produtos[
-        df_produtos["descricao"].str.contains(busca, case=False, na=False) |
-        df_produtos["codigo"].astype(str).str.contains(busca, case=False, na=False)
+        df_produtos["descricao"].str.contains(busca, case=False, na=False)
+        | df_produtos["codigo"].astype(str).str.contains(busca, case=False, na=False)
     ]
 
     with top2:
