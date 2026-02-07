@@ -651,6 +651,9 @@ with tab1:
     if "clear_search" in st.session_state:
         st.session_state[busca_key] = ""
         st.session_state.pop("clear_search")
+    if st.session_state.get("resume_camera"):
+        st.session_state.camera_on = True
+        st.session_state.resume_camera = False
 
     # Layout busca + botão QR
     st.markdown('<div class="search-row-marker"></div>', unsafe_allow_html=True)
@@ -676,7 +679,8 @@ with tab1:
 
         if qr_code:
             st.session_state["scan_value"] = qr_code   # preenche o campo no próximo rerun
-            # mantém a câmera aberta para novas leituras
+            st.session_state.resume_camera = True      # reabre a câmera após atualizar a busca
+            st.session_state.camera_on = False         # pausa a câmera para atualizar a lista
             st.success(f"Código lido: {qr_code}")
             st.rerun()
 
