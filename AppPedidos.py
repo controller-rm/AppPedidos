@@ -673,31 +673,42 @@ if "scan_value" not in st.session_state:
 
 st.markdown("""
 <style>
-div[data-baseweb="tab"] > button {
-    font-weight: 600;
+
+/* Container das abas */
+div[data-baseweb="tab-list"] {
+    gap: 10px;
+    padding-bottom: 6px;
 }
 
+/* Aba padrão */
+div[data-baseweb="tab"] > button {
+    font-weight: 700;
+    font-size: 16px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Hover */
+div[data-baseweb="tab"] > button:hover {
+    background-color: rgba(255, 75, 75, 0.08);
+}
+
+/* Aba ativa */
 div[data-baseweb="tab"] > button[aria-selected="true"] {
-    font-weight: 800;
-    border-bottom: 3px solid #ff4b4b;
+    font-weight: 900;
+    background-color: rgba(255, 75, 75, 0.15);
+    border-bottom: none;
+    box-shadow: 0 4px 10px rgba(255, 75, 75, 0.25);
 }
+
 </style>
 """, unsafe_allow_html=True)
-
-st.markdown("""
-<style>
-/* Texto das abas */
-div[data-baseweb="tab"] > button {
-    font-weight: 700;   /* negrito */
-    font-size: 15px;    /* opcional */
-}
-</style>
-""", unsafe_allow_html=True)
-
 
 tab1, tab2, tab3 = st.tabs(
     ["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"]
 )
+
 
 
 # Mapa de produtos já adicionados
@@ -1328,6 +1339,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
