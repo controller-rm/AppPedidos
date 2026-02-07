@@ -258,42 +258,46 @@ df_produtos["descricao"] = df_produtos["descricao"].astype(str)
 # =====================================================
 # DADOS CLIENTE
 # =====================================================
-st.header("🏢 Dados do Cliente")
+client_card = st.container(border=True)
+with client_card:
+    st.markdown("### 🏢 Dados do Cliente")
 
-col1, col2, col3, col4 = st.columns(4)
-rc = st.session_state.reset_counter
+    rc = st.session_state.reset_counter
+    col_cnpj, col_btn = st.columns([3, 1])
+    with col_cnpj:
+        cnpj = st.text_input("CNPJ *", placeholder="00.000.000/0000-00", key=f"cnpj_{rc}")
+    with col_btn:
+        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+        consultar = st.button("Consultar CNPJ", type="primary", use_container_width=True)
 
-cnpj = col1.text_input("CNPJ", key=f"cnpj_{rc}")
-telefone = col2.text_input("Telefone WhatsApp", key=f"tel_{rc}")
-email = col3.text_input("E-mail", key=f"email_{rc}")
-ie = col4.text_input("Inscrição Estadual", key=f"ie_{rc}")
+    telefone = st.text_input("📞 WhatsApp *", placeholder="(00) 00000-0000", key=f"tel_{rc}")
+    email = st.text_input("✉️ E-mail *", placeholder="email@exemplo.com", key=f"email_{rc}")
+    ie = st.text_input("🧾 Inscrição Estadual *", placeholder="000.000.000.000", key=f"ie_{rc}")
+    telefone_zionne = st.text_input("📞 Telefone WhatsApp Zionne", placeholder="(00) 00000-0000", key=f"tel_zionne_{rc}")
 
-telefone_zionne = st.text_input("Telefone WhatsApp Zionne", key=f"tel_zionne_{rc}")
-
-# Consulta CNPJ
-if st.button("Consultar CNPJ", type="primary", use_container_width=True):
-    dados, erro = consulta_cnpj(cnpj)
-    if erro:
-        st.error(erro)
-        # 🔥 NOVO: Opção para entrada manual
-        st.warning("CNPJ não encontrado. Insira os dados manualmente abaixo.")
-        st.session_state.dados_cliente = None  # Reseta para evitar conflitos
-    else:
-        st.session_state.dados_cliente = dados
-        st.success("Cliente localizado!")
+    # Consulta CNPJ
+    if consultar:
+        dados, erro = consulta_cnpj(cnpj)
+        if erro:
+            st.error(erro)
+            st.warning("CNPJ não encontrado. Insira os dados manualmente abaixo.")
+            st.session_state.dados_cliente = None
+        else:
+            st.session_state.dados_cliente = dados
+            st.success("Cliente localizado!")
 
 # 🔥 NOVO: Campos para entrada manual (sempre visíveis, mas preenchidos se consulta funcionar)
 if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True) or st.session_state.dados_cliente is None:
     st.subheader("📝 Inserir Dados do Cliente Manualmente")
     
-    razao_manual = st.text_input("Razão Social", value=st.session_state.dados_cliente.get("razao", "") if st.session_state.dados_cliente else "", key=f"razao_manual_{rc}")
-    logradouro_manual = st.text_input("Logradouro", value=st.session_state.dados_cliente.get("logradouro", "") if st.session_state.dados_cliente else "", key=f"logradouro_manual_{rc}")
-    numero_manual = st.text_input("Número", value=st.session_state.dados_cliente.get("numero", "") if st.session_state.dados_cliente else "", key=f"numero_manual_{rc}")
-    bairro_manual = st.text_input("Bairro", value=st.session_state.dados_cliente.get("bairro", "") if st.session_state.dados_cliente else "", key=f"bairro_manual_{rc}")
-    municipio_manual = st.text_input("Município", value=st.session_state.dados_cliente.get("municipio", "") if st.session_state.dados_cliente else "", key=f"municipio_manual_{rc}")
+    razao_manual = st.text_input("🏢 Razão Social", placeholder="Razão Social", value=st.session_state.dados_cliente.get("razao", "") if st.session_state.dados_cliente else "", key=f"razao_manual_{rc}")
+    logradouro_manual = st.text_input("📍 Logradouro", placeholder="Rua, Avenida...", value=st.session_state.dados_cliente.get("logradouro", "") if st.session_state.dados_cliente else "", key=f"logradouro_manual_{rc}")
+    numero_manual = st.text_input("🔢 Número", placeholder="Número", value=st.session_state.dados_cliente.get("numero", "") if st.session_state.dados_cliente else "", key=f"numero_manual_{rc}")
+    bairro_manual = st.text_input("🏘️ Bairro", placeholder="Bairro", value=st.session_state.dados_cliente.get("bairro", "") if st.session_state.dados_cliente else "", key=f"bairro_manual_{rc}")
+    municipio_manual = st.text_input("🏙️ Município", placeholder="Cidade", value=st.session_state.dados_cliente.get("municipio", "") if st.session_state.dados_cliente else "", key=f"municipio_manual_{rc}")
     uf_manual = st.selectbox("UF", ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"], 
                              index=["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"].index(st.session_state.dados_cliente.get("uf", "SP")) if st.session_state.dados_cliente else 24, key=f"uf_manual_{rc}")
-    cep_manual = st.text_input("CEP", value=st.session_state.dados_cliente.get("cep", "") if st.session_state.dados_cliente else "", key=f"cep_manual_{rc}")
+    cep_manual = st.text_input("🏷️ CEP", placeholder="00000-000", value=st.session_state.dados_cliente.get("cep", "") if st.session_state.dados_cliente else "", key=f"cep_manual_{rc}")
     
     if st.button("Salvar Dados Manuais", type="primary", use_container_width=True):
         if razao_manual and logradouro_manual and municipio_manual:
@@ -319,34 +323,74 @@ if st.session_state.dados_cliente:
 
 st.markdown("""
 <style>
-.card-produto {
-    border: 1px solid #e6e6e6;
-    border-left: 6px solid #4CAF50;
-    padding: 12px 12px 6px 12px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    background-color: #ffffff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Source+Sans+3:wght@400;600;700&display=swap');
+
+:root {
+    --zionne-green: #1f7a3a;
+    --zionne-green-700: #14652f;
+    --zionne-green-900: #0d3f1e;
+    --zionne-gold: #c9a35d;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --line: #e5e7eb;
+    --shadow: 0 8px 24px rgba(17, 24, 39, 0.10);
+    --shadow-soft: 0 2px 8px rgba(17, 24, 39, 0.08);
+    --radius: 14px;
+    --btn-primary: #54b97a;
+    --btn-primary-hover: #46aa6c;
+    --btn-danger: #e07a7a;
+    --btn-danger-hover: #d46c6c;
+    --btn-whatsapp: #6ac38a;
+    --btn-whatsapp-hover: #5ab67d;
 }
-</style>
-""", unsafe_allow_html=True)
 
-
-# Adicione ou expanda o st.markdown existente:
-st.markdown("""
-<style>
-.stTextInput input {
-    border: 2px solid #4CAF50 !important;  /* Borda verde para destacar */
-    border-radius: 5px !important;
+/* ===== BASE ===== */
+html, body, [data-testid="stAppViewContainer"] {
+    background: radial-gradient(1200px 600px at 10% -10%, #ffffff 0%, var(--bg) 50%, #f0efe9 100%) !important;
 }
-</style>
-""", unsafe_allow_html=True)
 
-#SOLUÇÃO DEFINITIVA (desktop + mobile)
-st.markdown("""
-<style>
+[data-testid="stAppViewContainer"] * {
+    font-family: "Source Sans 3", sans-serif;
+    color: var(--ink);
+}
 
-/* ===== BOTÕES STREAMLIT 100% LARGURA SEMPRE ===== */
+h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+    font-family: "Source Sans 3", sans-serif !important;
+    letter-spacing: 0.1px;
+}
+
+[data-testid="stHeader"] {
+    background: transparent !important;
+}
+
+[data-testid="stAppViewContainer"] > .main .block-container {
+    padding-top: 2rem;
+    padding-bottom: 2.5rem;
+}
+
+/* ===== INPUTS ===== */
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input,
+.stSelectbox select {
+    border: 1px solid var(--line) !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
+    background: #fff !important;
+    box-shadow: inset 0 1px 0 rgba(17,24,39,0.02);
+}
+
+.stTextInput input:focus,
+.stTextArea textarea:focus,
+.stNumberInput input:focus,
+.stSelectbox select:focus {
+    border-color: var(--zionne-green) !important;
+    box-shadow: 0 0 0 3px rgba(31, 122, 58, 0.18) !important;
+}
+
+/* ===== BUTTONS ===== */
 div[data-testid="stButton"] {
     width: 100% !important;
 }
@@ -354,61 +398,165 @@ div[data-testid="stButton"] {
 div[data-testid="stButton"] > button {
     width: 100% !important;
     display: block !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     height: 44px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
+    border: none !important;
+    box-shadow: var(--shadow-soft) !important;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 
-/* REMOVE LIMITAÇÃO DAS COLUNAS (O SEGREDO) */
-div[data-testid="column"] > div {
-    width: 100% !important;
-}
-
-/* ===== CORES ===== */
-
-/* 🔵 ATUALIZAR */
 button[kind="primary"] {
-    background-color: #1976D2 !important;
+    background: linear-gradient(180deg, #7ad0a0 0%, var(--btn-primary) 100%) !important;
     color: white !important;
 }
 
-/* 🟢 ADICIONAR */
-button[kind="primary"]:has(span:contains("Adicionar")) {
-    background-color: #4CAF50 !important;
+button[kind="primary"]:hover {
+    background: linear-gradient(180deg, #6fc995 0%, var(--btn-primary-hover) 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(17, 24, 39, 0.16) !important;
 }
 
-/* 🔴 REMOVER */
 button[kind="secondary"] {
-    background-color: #e53935 !important;
+    background: var(--btn-danger) !important;
     color: white !important;
 }
 
-/* HOVER */
-button[kind="primary"]:hover { background-color: #1565C0 !important; }
-button[kind="secondary"]:hover { background-color: #c62828 !important; }
+button[kind="secondary"]:hover {
+    background: var(--btn-danger-hover) !important;
+}
 
-</style>
-""", unsafe_allow_html=True)
+/* ===== CARDS ===== */
+.card-produto {
+    border: 1px solid var(--line);
+    border-left: 6px solid var(--zionne-green);
+    padding: 14px 14px 10px 14px;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
 
+/* ===== PRODUTOS GRID ===== */
+.card-inner {
+    background: #f6f1e7;
+    border-radius: 12px;
+    padding: 10px;
+}
 
-st.markdown("""
-<style>
+.product-sku {
+    display: inline-block;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--zionne-green-900);
+    background: #eaf4ee;
+    padding: 4px 8px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+}
 
-/* 🟠 NOVO PEDIDO */
-button[kind="primary"] span:contains("Novo Pedido") {
-    background-color: #FB8C00 !important;
+.product-desc {
+    font-size: 16px;
+    color: var(--ink);
+    min-height: 40px;
+}
+
+.product-price {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--zionne-green-900);
+    margin-top: 8px;
+    background: #eaf4ee;
+    padding: 6px 8px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.product-actions {
+    margin-top: 10px;
+}
+
+.product-actions .stNumberInput,
+.product-actions .stButton {
+    margin-top: 6px;
+}
+
+.product-card-marker {
+    display: none;
+}
+
+.product-status {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.product-status b {
+    color: var(--ink);
+}
+
+/* ===== SEARCH ROW (PRODUTOS) ===== */
+.search-row-marker {
+    display: none;
+}
+
+div[data-testid="stVerticalBlock"]:has(.search-row-marker) .stTextInput input {
+    height: 36px !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(.search-row-marker) div[data-testid="stButton"] > button {
+    height: 36px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 6px 10px !important;
+}
+
+/* ===== ACTION ROW BUTTONS ===== */
+.action-row-marker {
+    display: none;
+}
+
+div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stDownloadButton"] > button,
+div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stLinkButton"] a {
+    height: 36px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 6px 10px !important;
+    box-shadow: none !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stDownloadButton"] > button {
+    background: #7b9bff !important;
     color: white !important;
 }
 
-</style>
-""", unsafe_allow_html=True)
+div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stDownloadButton"] > button:hover {
+    background: #6b8df2 !important;
+}
 
+div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stLinkButton"] a {
+    background: #65c37f !important;
+    color: white !important;
+}
 
+div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stLinkButton"] a:hover {
+    background: #57b571 !important;
+}
 
-st.markdown("""
-<style>
+/* ===== TABS ===== */
+div[data-testid="stTabs"] button {
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 700 !important;
+}
 
-/* ===== BOTÕES WHATSAPP DESTAQUE ===== */
+div[data-testid="stTabs"] button[aria-selected="true"] {
+    color: var(--zionne-green-900) !important;
+    border-bottom: 3px solid var(--zionne-gold) !important;
+}
+
+/* ===== LINKS WHATSAPP ===== */
 div[data-testid="stLinkButton"] a {
     display: block !important;
     width: 100% !important;
@@ -417,129 +565,68 @@ div[data-testid="stLinkButton"] a {
     border-radius: 12px !important;
     font-size: 18px !important;
     font-weight: 700 !important;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.15) !important;
-    transition: all 0.2s ease-in-out !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18) !important;
+    transition: transform 0.12s ease, box-shadow 0.12s ease !important;
     margin-top: 10px !important;
 }
 
-/* 🌟 Cliente */
 a[href*="wa.me"] {
-    background: linear-gradient(90deg, #25D366, #1ebe5d) !important;
+    background: linear-gradient(90deg, var(--btn-whatsapp), #4fbf7a) !important;
     color: white !important;
     border: none !important;
 }
 
-/* ✨ Hover efeito */
 div[data-testid="stLinkButton"] a:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.25) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.22) !important;
+    background: linear-gradient(90deg, var(--btn-whatsapp-hover), #45b870) !important;
 }
 
-</style>
-""", unsafe_allow_html=True)
-
-#SCROLL SÓ NA LISTA DE PRODUTOS TAB1 
-st.markdown("""
-<style>
-
-/* ===== SCROLL SOMENTE NA LISTA DE PRODUTOS ===== */
+/* ===== SCROLL ÁREAS ===== */
 section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("PRODUTOS")) + div {
     height: calc(100vh - 200px);
     overflow-y: auto;
     padding-right: 6px;
 }
 
-/* MOBILE */
-@media (max-width: 768px) {
-    section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("PRODUTOS")) + div {
-        height: calc(100vh - 150px) !important;
-    }
-}
-
-/* BARRA DE SCROLL BONITA */
-::-webkit-scrollbar {
-    width: 8px;
-}
-::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #888;
-}
-
-/* BOTÕES FULL WIDTH NO MOBILE */
-@media (max-width: 768px) {
-    div[data-testid="column"] {
-        padding-left: 0px !important;
-        padding-right: 0px !important;
-    }
-    div[data-testid="stButton"] > button {
-        width: 100% !important;
-    }
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-
-#SCROLL SÓ NA LISTA DE PEDIDO-CARRINHO TAB2
-st.markdown("""
-<style>
-
-/* ===== CONTAINER REAL DO CARRINHO ===== */
 section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("CARRINHO")) + div {
     height: calc(100vh - 190px);
     overflow-y: auto;
     padding-right: 6px;
 }
 
-/* MOBILE */
 @media (max-width: 768px) {
+    section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("PRODUTOS")) + div {
+        height: calc(100vh - 150px) !important;
+    }
     section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("CARRINHO")) + div {
         height: calc(100vh - 140px) !important;
     }
-}
-
-/* TOTAL FIXO */
-.total-box {
-    background: white;
-    padding: 14px;
-    border-radius: 14px;
-    box-shadow: 0 -3px 12px rgba(0,0,0,0.08);
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-#BOTOES PEDIDO-CARRINHO
-
-st.markdown("""
-<style>
-
-/* 🔥 COLUNAS SEM MARGEM NO MOBILE */
-@media (max-width: 768px) {
     div[data-testid="column"] {
         padding-left: 0px !important;
         padding-right: 0px !important;
     }
 }
 
-/* BOTÕES REALMENTE FULL WIDTH */
-div[data-testid="stButton"] > button {
-    width: 100% !important;
-    display: block !important;
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
 }
+::-webkit-scrollbar-thumb:hover { background: #888; }
 
-/* Remove espaço lateral padrão */
-div[data-testid="stButton"] {
-    width: 100% !important;
+/* ===== TOTAL FIXO ===== */
+.total-box {
+    background: #ffffff;
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    border: 1px solid var(--line);
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -558,38 +645,32 @@ with tab1:
 
     st.markdown("### 📦 PRODUTOS")
 
-    top1, top2 = st.columns([4,1])  # 🔥 ADICIONE ISSO
-
-
     busca_key = f"busca_{rc}"
-    qr_buffer_key = f"qr_buffer_{rc}"
-    
-    # 🔁 Se há QR lido, aplica ANTES do widget nascer
-    if qr_buffer_key in st.session_state:
-        st.session_state[busca_key] = st.session_state[qr_buffer_key]
-        del st.session_state[qr_buffer_key]
-    
-    colBusca, colQR = st.columns([4,1])
-    
+
+    # Layout busca + botão QR
+    st.markdown('<div class="search-row-marker"></div>', unsafe_allow_html=True)
+    colBusca, colQR, top2 = st.columns([6, 1, 1])
+
     # 🔎 Campo de busca
     with colBusca:
-        busca = st.text_input("🔎 Buscar produto", key=busca_key)
-    
-    # 📷 Botão que liga câmera
-    with colQR:
-        if st.button("📷", use_container_width=True):
-            st.session_state.camera_on = not st.session_state.camera_on
-    
-    # 📷 Scanner
-    if st.session_state.camera_on:
-        st.info("Aponte para o QR Code")
-        qr_code = qrcode_scanner()
-    
-        if qr_code:
-            st.session_state[qr_buffer_key] = qr_code  # salva temporário
-            st.session_state.camera_on = False
-            st.rerun()
+        busca = st.text_input("🔎 Buscar produto", placeholder="Buscar por SKU ou descrição...", key=busca_key)
 
+    # 📷 Botão que liga/desliga câmera
+    with colQR:
+        if st.button("Scanner", type="primary", use_container_width=True):
+            st.session_state.camera_on = not st.session_state.camera_on
+
+    # 📷 Scanner aparece só se estiver ativo
+    if st.session_state.camera_on:
+        st.info("Aponte a câmera para o QR Code")
+
+        qr_code = qrcode_scanner()
+
+        if qr_code:
+            st.session_state[busca_key] = qr_code   # preenche o campo
+            st.session_state.camera_on = False      # desliga câmera
+            st.success(f"Código lido: {qr_code}")
+            st.rerun()
 
     # 🔍 Filtro de produtos
     df_filtrado = df_produtos[
@@ -610,84 +691,54 @@ with tab1:
     with container_produtos:
 
         carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
+        produtos = df_filtrado.to_dict("records")
 
-        for _, row in df_filtrado.iterrows():
+        for i in range(0, len(produtos), 3):
+            cols = st.columns(3)
 
-            codigo = row["codigo"]
-            preco = row["preco"]
-            ja_no_carrinho = codigo in carrinho_map
-            border_color = "#4CAF50" if ja_no_carrinho else "#e6e6e6"
+            for j, col in enumerate(cols):
+                if i + j >= len(produtos):
+                    break
 
-            st.markdown(f"""
-            <div style="
-                border:1px solid #e6e6e6;
-                border-left:6px solid {border_color};
-                padding:12px;
-                border-radius:8px;
-                margin-bottom:10px;
-                background:white;">
-            """, unsafe_allow_html=True)
+                row = produtos[i + j]
+                codigo = row["codigo"]
+                preco = row["preco"]
+                ja_no_carrinho = codigo in carrinho_map
+                badge = "✅ No pedido" if ja_no_carrinho else " "
 
+                with col:
+                    card = st.container(border=True)
+                    with card:
+                        st.markdown('<div class="card-inner">', unsafe_allow_html=True)
+                        st.markdown(f'<div class="product-sku">SKU {codigo}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="product-desc">{row["descricao"]}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="product-price">R$ {preco:.2f}</div>', unsafe_allow_html=True)
 
+                        st.markdown('<div class="product-actions">', unsafe_allow_html=True)
+                        qtd = st.number_input("Qtd", value=1, min_value=1, step=1, key=f"qtd_{codigo}_{rc}")
 
-            c1, c2, c3, c4 = st.columns([1,3,2,2])
-            c1.markdown(
-            f"""
-            <div style="
-                font-size:18px;
-                font-weight:bold;
-                background:#f1f3f6;
-                padding:6px 8px;
-                border-radius:6px;
-                text-align:center;">SKU {codigo}
-            </div>
-            """, unsafe_allow_html=True)
+                        if st.button("Adicionar ➕", key=f"add_{codigo}", type="primary", use_container_width=True):
+                            if ja_no_carrinho:
+                                idx = next(i for i, item in enumerate(st.session_state.carrinho) if item["codigo"] == codigo)
+                                st.session_state.carrinho[idx]["qtd"] += qtd
+                                st.session_state.carrinho[idx]["total"] = st.session_state.carrinho[idx]["qtd"] * preco
+                            else:
+                                st.session_state.carrinho.append({
+                                    "codigo": codigo,
+                                    "descricao": row["descricao"],
+                                    "qtd": qtd,
+                                    "preco": preco,
+                                    "total": qtd * preco
+                                })
+                            # Streamlit já faz rerun automaticamente; evitar salto de scroll
 
-            #c1.write(codigo)
-            c2.write(row["descricao"])
-            c3.markdown(
-                f"""
-                <div style="
-                    font-size:20px;
-                    font-weight:bold;
-                    color:#1f7a1f;
-                    background:#eef8ee;
-                    padding:6px 10px;
-                    border-radius:6px;
-                    text-align:center;">
-                    R$ {preco:.2f}
-                </div>
-                """,
-                unsafe_allow_html=True)
+                        if ja_no_carrinho:
+                            qtd_total = carrinho_map[codigo]["qtd"]
+                            st.markdown("🟢 **Este produto já está no pedido**")
+                            st.markdown(f"✅ **No Pedido: {qtd_total} unidades**")
 
-            #c3.write(f'R$ {preco:.2f}')
-            qtd = c4.number_input("Qtd", value=1, min_value=1, step=1, key=f"qtd_{codigo}_{rc}")
-
-            # 👇 BOTÃO FORA DAS COLUNAS
-            if st.button("Adicionar ➕", key=f"add_{codigo}", type="primary", use_container_width=True):
-
-                if ja_no_carrinho:
-                    idx = next(i for i, item in enumerate(st.session_state.carrinho) if item["codigo"] == codigo)
-                    st.session_state.carrinho[idx]["qtd"] += qtd
-                    st.session_state.carrinho[idx]["total"] = st.session_state.carrinho[idx]["qtd"] * preco
-                else:
-                    st.session_state.carrinho.append({
-                        "codigo": codigo,
-                        "descricao": row["descricao"],
-                        "qtd": qtd,
-                        "preco": preco,
-                        "total": qtd * preco
-                    })
-                st.rerun()
-
-            if ja_no_carrinho:
-                qtd_total = carrinho_map[codigo]["qtd"]
-                st.markdown("🟢 **Este produto já está no pedido**")
-                st.markdown(f"✅ **No Pedido: {qtd_total} unidades**")
-
-
-
-            st.markdown("</div>", unsafe_allow_html=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
 
 with tab2:
 
@@ -695,79 +746,84 @@ with tab2:
 
     if st.session_state.carrinho and st.session_state.dados_cliente:
 
+        df_carrinho = pd.DataFrame(st.session_state.carrinho)
+        total_pedido = df_carrinho["total"].sum() if not df_carrinho.empty else 0
+
         top1, top2 = st.columns([4,1])
         with top1:
             st.caption("Itens adicionados")
         with top2:
-            st.markdown(f"<div style='text-align:right;margin-top:6px'><b>{len(st.session_state.carrinho)}</b><br>itens</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='text-align:right;margin-top:6px'>"
+                f"<b>{len(st.session_state.carrinho)}</b><br>itens"
+                f"<div style='font-size:16px;color:#6b7280;margin-top:4px'>"
+                f"Total: R$ {total_pedido:,.2f}"
+                f"</div></div>",
+                unsafe_allow_html=True
+            )
 
         container_carrinho = st.container()
         # container_carrinho.markdown('<div class="scroll-carrinho"></div>', unsafe_allow_html=True)
 
         with container_carrinho:
 
+            def atualizar_item(idx, key_qtd, preco):
+                nova_qtd = st.session_state.get(key_qtd, 1)
+                st.session_state.carrinho[idx]["qtd"] = nova_qtd
+                st.session_state.carrinho[idx]["total"] = nova_qtd * preco
+
+            def remover_item(idx):
+                del st.session_state.carrinho[idx]
+
             for i, item in enumerate(st.session_state.carrinho):
 
-                st.markdown('<div class="card-produto">', unsafe_allow_html=True)
+                card = st.container(border=True)
+                with card:
+                    st.markdown('<div class="card-inner">', unsafe_allow_html=True)
+                    st.markdown(f'<div class="product-sku">SKU {item["codigo"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="product-desc">{item["descricao"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="product-price">R$ {item["preco"]:.2f}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="product-status">Total do item: <b>R$ {item["total"]:.2f}</b></div>',
+                        unsafe_allow_html=True
+                    )
 
-                col1, col2, col3, col4 = st.columns([1, 3, 2, 2])
+                    st.markdown('<div class="product-actions">', unsafe_allow_html=True)
+                    key_qtd = f"edit_qtd_{i}_{st.session_state.reset_counter}"
+                    st.number_input(
+                        "Qtd",
+                        value=item["qtd"],
+                        min_value=1,
+                        step=1,
+                        key=key_qtd
+                    )
 
-                col1.markdown(
-                f"""
-                <div style="
-                    font-size:18px;
-                    font-weight:bold;
-                    background:#f1f3f6;
-                    padding:6px 8px;
-                    border-radius:6px;
-                    text-align:center;">SKU {codigo}
-                </div>
-                """, unsafe_allow_html=True)
+                    st.button(
+                        "Atualizar 🔄",
+                        key=f"update_{i}",
+                        type="primary",
+                        use_container_width=True,
+                        on_click=atualizar_item,
+                        args=(i, key_qtd, item["preco"])
+                    )
 
-                #col1.write(item["codigo"])
-                
-                col2.write(item["descricao"])
-                col3.markdown(
-                    f"""
-                    <div style="
-                        font-size:20px;
-                        font-weight:bold;
-                        color:#1f7a1f;
-                        background:#eef8ee;
-                        padding:6px 10px;
-                        border-radius:6px;
-                        text-align:center;">
-                        R$ {item['preco']:.2f}
-                    </div>
-                    """,
-                    unsafe_allow_html=True)
+                    st.button(
+                        "Remover 🗑️",
+                        key=f"remove_{i}",
+                        type="secondary",
+                        use_container_width=True,
+                        on_click=remover_item,
+                        args=(i,)
+                    )
 
-                #col3.write(f'R$ {item["preco"]:.2f}')
-
-                nova_qtd = col4.number_input(
-                    "Qtd",
-                    value=item["qtd"],
-                    min_value=1,
-                    step=1,
-                    key=f"edit_qtd_{i}_{st.session_state.reset_counter}"
-                )
-
-                # 👇 BOTÕES FORA DA LINHA
-                if st.button("Atualizar 🔄", key=f"update_{i}", type="primary", use_container_width=True):
-                    st.session_state.carrinho[i]["qtd"] = nova_qtd
-                    st.session_state.carrinho[i]["total"] = nova_qtd * item["preco"]
-                    st.rerun()
-
-                if st.button("Remover 🗑️", key=f"remove_{i}", type="secondary", use_container_width=True):
-                    del st.session_state.carrinho[i]
-                    st.rerun()
-
-
-                st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="product-status">✅ No Pedido: <b>{item["qtd"]} unidades</b></div>',
+                        unsafe_allow_html=True
+                    )
+                    st.markdown("</div>", unsafe_allow_html=True)
 
         # TOTAL FIXO FORA DO SCROLL
-        df_carrinho = pd.DataFrame(st.session_state.carrinho)
-        total_pedido = df_carrinho["total"].sum() if not df_carrinho.empty else 0
 
         st.markdown(
             f"<div class='total-box'><h3>💰 TOTAL: R$ {total_pedido:,.2f}</h3>",
@@ -833,7 +889,6 @@ with tab3:
     )
 
     csv_content = csv_buffer.getvalue()
-    st.download_button("📥 Baixar CSV", csv_content, nome_csv, mime="text/csv")
 
     # Função para gerar PDF
     # Função para gerar PDF
@@ -963,7 +1018,56 @@ with tab3:
 
     nome_pdf = f"PEDIDO_ZIONNE_{cnpj}_{timestamp}.pdf"
 
-    st.download_button("📄 Baixar PDF", pdf_bytes, nome_pdf, mime="application/pdf")
+    # Ações em linha (CSV / PDF / WhatsApp Cliente)
+    telefone_limpo = re.sub(r'\D', '', telefone)
+    d = st.session_state.dados_cliente
+    mensagem_cliente_full = f"""🧾 *PEDIDO ZIONNE – FEIRA ABUP*
+
+━━━━━━━━━━━━━━━━━━
+👤 *DADOS DO CLIENTE*
+Razão Social: {d["razao"]}
+CNPJ: {cnpj}
+IE: {ie}
+Telefone: {telefone}
+E-mail: {email}
+
+📍 Endereço:
+{d["logradouro"]}, {d["numero"]} - {d["bairro"]}
+{d["municipio"]}/{d["uf"]} - CEP {d["cep"]}
+
+━━━━━━━━━━━━━━━━━━
+🚚 *FRETE:* {tipo_Frete}
+💳 *PAGAMENTO:* {condicao_pagamento}
+
+📝 *OBSERVAÇÕES*
+{observacoes if observacoes else "—"}
+
+━━━━━━━━━━━━━━━━━━
+📦 *ITENS DO PEDIDO*
+"""
+
+    for item in st.session_state.carrinho:
+        mensagem_cliente_full += (
+            f"\n🔹 *{item['descricao']}*\n"
+            f"Cód: {item['codigo']}\n"
+            f"{item['qtd']} x R$ {item['preco']:.2f} = *R$ {item['total']:.2f}*\n"
+        )
+
+    mensagem_cliente_full += f"""
+━━━━━━━━━━━━━━━━━━
+💰 *TOTAL DO PEDIDO: R$ {total_pedido:.2f}*
+━━━━━━━━━━━━━━━━━━
+
+Obrigado por comprar com a *Zionne* 🤍
+"""
+    action_row = st.container()
+    with action_row:
+        st.markdown('<div class="action-row-marker"></div>', unsafe_allow_html=True)
+        c_csv, c_pdf = st.columns(2)
+        with c_csv:
+            st.download_button("Gerar CSV", csv_content, nome_csv, mime="text/csv", use_container_width=True)
+        with c_pdf:
+            st.download_button("Gerar PDF", pdf_bytes, nome_pdf, mime="application/pdf", use_container_width=True)
 
 # =====================================================
 # WHATSAPP
@@ -1068,8 +1172,6 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
-
-
 
 
 
