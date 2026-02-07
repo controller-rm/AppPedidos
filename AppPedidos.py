@@ -9,7 +9,7 @@ from fpdf import FPDF  # Adicione esta linha para gerar PDFs (instale com pip in
 
 st.set_page_config(page_title="Sistema de Pedidos", layout="wide")
 st.markdown(
-    "<h1 style='font-size:25px;'>🛒 Emissão de Pedido - Zionne</h1>",
+    "<h1 style='font-size:25px;'>🛒 Bloco de Pedido - Zionne</h1>",
     unsafe_allow_html=True
 )
 
@@ -275,8 +275,11 @@ df_produtos["descricao"] = df_produtos["descricao"].astype(str)
 # =====================================================
 client_card = st.container(border=True)
 with client_card:
-    st.markdown("### 🏢 Dados do Cliente")
-
+    #st.markdown("### 🏢 Dados do Cliente")
+    st.markdown(
+        "<h1 style='font-size:25px;'>🏢 Dados do Cliente</h1>",
+        unsafe_allow_html=True
+    )
     rc = st.session_state.reset_counter
     col_cnpj, col_btn = st.columns([3, 1])
     with col_cnpj:
@@ -1295,5 +1298,6 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
