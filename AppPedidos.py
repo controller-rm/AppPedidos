@@ -668,6 +668,7 @@ with tab1:
     busca_key = f"busca_{rc}"
     if "scan_value" in st.session_state:
         st.session_state[busca_key] = st.session_state.pop("scan_value")
+        
     if "clear_search" in st.session_state:
         st.session_state[busca_key] = ""
         st.session_state.pop("clear_search")
@@ -678,12 +679,15 @@ with tab1:
 
     # 🔎 Campo de busca
     with colBusca:
+        # 🔁 aplica valor vindo do scanner ANTES do input nascer
+
         busca = st.text_input(
             "🔎 Buscar produto",
             placeholder="Buscar por SKU ou descrição...",
-            key=busca_key,
-            value=st.session_state.busca_valor
+            key=busca_key
         )
+        busca = busca or ""
+
 
     # 📷 Controles do scanner
     with colQR:
@@ -714,7 +718,7 @@ with tab1:
                 st.session_state.last_scan_time = now
 
                 # 🔥 atualiza o campo de busca (via estado auxiliar)
-                st.session_state[busca_key] = str(qr_code)
+                st.session_state.scan_value = str(qr_code)
 
 
                 # fecha a câmera (ganho de performance)
@@ -752,6 +756,11 @@ with tab1:
                         })
 
                     st.toast(f"✅ {codigo} adicionado ao pedido", icon="📦")
+
+                    # 🔥 ADICIONE ESTAS DUAS LINHAS
+                    st.session_state.clear_search = True
+                    st.rerun()
+
                 else:
                     st.warning(f"⚠️ Produto {qr_code} não encontrado")
 
@@ -831,6 +840,11 @@ with tab1:
                                     "preco": preco,
                                     "total": qtd * preco
                                 })
+
+                            # 🔥 ADICIONE ESTAS DUAS LINHAS
+                            st.session_state.clear_search = True
+                            st.rerun()
+
 
                         if ja_no_carrinho:
                             qtd_total = carrinho_map[codigo]["qtd"]
