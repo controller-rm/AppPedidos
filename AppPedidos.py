@@ -656,11 +656,6 @@ if "last_qr" not in st.session_state:
 if "last_scan_time" not in st.session_state:
     st.session_state.last_scan_time = 0
 
-if "busca_valor" not in st.session_state:
-    st.session_state.busca_valor = ""
-
-
-
 tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
 
 # Mapa de produtos já adicionados
@@ -719,7 +714,8 @@ with tab1:
                 st.session_state.last_scan_time = now
 
                 # 🔥 atualiza o campo de busca (via estado auxiliar)
-                st.session_state.busca_valor = str(qr_code)
+                st.session_state[busca_key] = str(qr_code)
+
 
                 # fecha a câmera (ganho de performance)
                 st.session_state.camera_on = False
