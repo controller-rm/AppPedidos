@@ -12,8 +12,6 @@ st.markdown(
     "<h1 style='font-size:25px;'>🛒 Emissão de Pedido - Zionne</h1>",
     unsafe_allow_html=True
 )
-st.title("🛒 Emissão de Pedido - Zionne")
-
 
 # ==============================
 # NOVO PEDIDO (RESET REAL)
@@ -1297,4 +1295,5 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
