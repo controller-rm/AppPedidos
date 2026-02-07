@@ -646,6 +646,8 @@ with tab1:
     st.markdown("### 📦 PRODUTOS")
 
     busca_key = f"busca_{rc}"
+    if "scan_value" in st.session_state:
+        st.session_state[busca_key] = st.session_state.pop("scan_value")
 
     # Layout busca + botão QR
     st.markdown('<div class="search-row-marker"></div>', unsafe_allow_html=True)
@@ -667,7 +669,7 @@ with tab1:
         qr_code = qrcode_scanner()
 
         if qr_code:
-            st.session_state[busca_key] = qr_code   # preenche o campo
+            st.session_state["scan_value"] = qr_code   # preenche o campo no próximo rerun
             st.session_state.camera_on = False      # desliga câmera
             st.success(f"Código lido: {qr_code}")
             st.rerun()
@@ -1172,11 +1174,5 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
-
-
-
-
-
-
 
 
