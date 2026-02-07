@@ -760,40 +760,6 @@ with tab1:
                     st.warning(f"⚠️ Produto {qr_code} não encontrado")
 
 
-                produto = df_produtos[df_produtos["codigo"].astype(str) == str(qr_code)]
-
-                if not produto.empty:
-                    row = produto.iloc[0]
-                    codigo = row["codigo"]
-                    preco = row["preco"]
-
-                    carrinho_map = {
-                        item["codigo"]: item
-                        for item in st.session_state.carrinho
-                    }
-
-                    if codigo in carrinho_map:
-                        idx = next(
-                            i for i, item in enumerate(st.session_state.carrinho)
-                            if item["codigo"] == codigo
-                        )
-                        st.session_state.carrinho[idx]["qtd"] += 1
-                        st.session_state.carrinho[idx]["total"] = (
-                            st.session_state.carrinho[idx]["qtd"] * preco
-                        )
-                    else:
-                        st.session_state.carrinho.append({
-                            "codigo": codigo,
-                            "descricao": row["descricao"],
-                            "qtd": 1,
-                            "preco": preco,
-                            "total": preco
-                        })
-
-                    st.toast(f"✅ {codigo} adicionado ao pedido", icon="📦")
-                else:
-                    st.warning(f"⚠️ Produto {qr_code} não encontrado")
-
     # 🔍 Filtro de produtos
     df_filtrado = df_produtos[
         df_produtos["descricao"].str.contains(busca, case=False, na=False) |
@@ -1310,4 +1276,3 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
-
