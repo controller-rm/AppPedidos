@@ -308,7 +308,7 @@ with client_card:
 if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True) or st.session_state.dados_cliente is None:
     #st.subheader("📝 Inserir Dados do Cliente Manualmente")
     st.markdown(
-    "<h1 style='font-size:20px;'>📝 Inserir Dados do Cliente Manualmente</h1>",
+    "<h1 style='font-size:20px;'>📝Inserir Dados Manualmente</h1>",
     unsafe_allow_html=True
 )
     
@@ -1303,6 +1303,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
