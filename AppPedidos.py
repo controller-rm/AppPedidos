@@ -651,9 +651,6 @@ with tab1:
     if "clear_search" in st.session_state:
         st.session_state[busca_key] = ""
         st.session_state.pop("clear_search")
-    if st.session_state.get("resume_camera"):
-        st.session_state.camera_on = True
-        st.session_state.resume_camera = False
 
     # Layout busca + botão QR
     st.markdown('<div class="search-row-marker"></div>', unsafe_allow_html=True)
@@ -679,8 +676,8 @@ with tab1:
 
         if qr_code:
             st.session_state["scan_value"] = qr_code   # preenche o campo no próximo rerun
-            st.session_state.resume_camera = True      # reabre a câmera após atualizar a busca
             st.session_state.camera_on = False         # pausa a câmera para atualizar a lista
+            st.session_state.reopen_after_add = True   # reabrir após adicionar o item
             st.success(f"Código lido: {qr_code}")
             st.rerun()
 
@@ -744,6 +741,9 @@ with tab1:
                                 })
                             # Streamlit já faz rerun automaticamente; evitar salto de scroll
                             st.session_state["clear_search"] = True
+                            if st.session_state.get("reopen_after_add"):
+                                st.session_state.camera_on = True
+                                st.session_state.reopen_after_add = False
 
                         if ja_no_carrinho:
                             qtd_total = carrinho_map[codigo]["qtd"]
@@ -1185,5 +1185,3 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
-
-
