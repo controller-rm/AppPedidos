@@ -58,6 +58,19 @@ def consulta_cnpj(cnpj):
         }, None
     except:
         return None, "Erro na consulta do CNPJ"
+    
+def normaliza_codigo_qr(qr):
+    if qr is None:
+        return None
+
+    # remove espaços e quebras de linha
+    qr = str(qr).strip()
+
+    # mantém apenas números
+    qr = re.sub(r"\D", "", qr)
+
+    # completa com zeros à esquerda (7 dígitos)
+    return qr.zfill(7)
 
  # =====================================================
 # PRODUTOS - BASE COMPLETA
@@ -690,7 +703,9 @@ with tab1:
     if st.session_state.camera_on:
         st.caption("📷 Aponte a câmera para o QR Code")
 
-        qr_code = qrcode_scanner()
+        raw_qr = qrcode_scanner()
+        qr_code = normaliza_codigo_qr(raw_qr)
+
 
         if qr_code:
             now = time.time()
@@ -709,9 +724,8 @@ with tab1:
                 # fecha a câmera (ganho de performance)
                 st.session_state.camera_on = False
 
-                produto = df_produtos[
-                    df_produtos["codigo"].astype(str) == str(qr_code)
-                ]
+                produto = df_produtos[df_produtos["codigo"] == qr_code]
+
 
                 if not produto.empty:
                     row = produto.iloc[0]
