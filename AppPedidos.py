@@ -306,7 +306,12 @@ with client_card:
 
 # 🔥 NOVO: Campos para entrada manual (sempre visíveis, mas preenchidos se consulta funcionar)
 if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True) or st.session_state.dados_cliente is None:
-    st.subheader("📝 Inserir Dados do Cliente Manualmente")
+    #st.subheader("📝 Inserir Dados do Cliente Manualmente")
+    st.markdown(
+    "<h1 style='font-size:20px;'>📝 Inserir Dados do Cliente Manualmente</h1>",
+    unsafe_allow_html=True
+)
+    
     
     razao_manual = st.text_input("🏢 Razão Social", placeholder="Razão Social", value=st.session_state.dados_cliente.get("razao", "") if st.session_state.dados_cliente else "", key=f"razao_manual_{rc}")
     logradouro_manual = st.text_input("📍 Logradouro", placeholder="Rua, Avenida...", value=st.session_state.dados_cliente.get("logradouro", "") if st.session_state.dados_cliente else "", key=f"logradouro_manual_{rc}")
@@ -1298,6 +1303,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
