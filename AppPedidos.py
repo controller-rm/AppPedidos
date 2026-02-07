@@ -648,6 +648,9 @@ with tab1:
     busca_key = f"busca_{rc}"
     if "scan_value" in st.session_state:
         st.session_state[busca_key] = st.session_state.pop("scan_value")
+    if "clear_search" in st.session_state:
+        st.session_state[busca_key] = ""
+        st.session_state.pop("clear_search")
 
     # Layout busca + botão QR
     st.markdown('<div class="search-row-marker"></div>', unsafe_allow_html=True)
@@ -661,6 +664,9 @@ with tab1:
     with colQR:
         if st.button("Scanner", type="primary", use_container_width=True):
             st.session_state.camera_on = not st.session_state.camera_on
+        if st.session_state.camera_on:
+            if st.button("Fechar Scanner", type="secondary", use_container_width=True):
+                st.session_state.camera_on = False
 
     # 📷 Scanner aparece só se estiver ativo
     if st.session_state.camera_on:
@@ -670,7 +676,7 @@ with tab1:
 
         if qr_code:
             st.session_state["scan_value"] = qr_code   # preenche o campo no próximo rerun
-            st.session_state.camera_on = False      # desliga câmera
+            # mantém a câmera aberta para novas leituras
             st.success(f"Código lido: {qr_code}")
             st.rerun()
 
@@ -733,6 +739,7 @@ with tab1:
                                     "total": qtd * preco
                                 })
                             # Streamlit já faz rerun automaticamente; evitar salto de scroll
+                            st.session_state["clear_search"] = True
 
                         if ja_no_carrinho:
                             qtd_total = carrinho_map[codigo]["qtd"]
