@@ -632,9 +632,18 @@ section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(di
 
 from streamlit_qrcode_scanner import qrcode_scanner
 
-# Estado da câmera
+import time
+
 if "camera_on" not in st.session_state:
     st.session_state.camera_on = False
+
+if "last_qr" not in st.session_state:
+    st.session_state.last_qr = None
+
+if "last_scan_time" not in st.session_state:
+    st.session_state.last_scan_time = 0
+
+
 
 tab1, tab2, tab3 = st.tabs(["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"])
 
@@ -658,28 +667,71 @@ with tab1:
 
     # 🔎 Campo de busca
     with colBusca:
-        busca = st.text_input("🔎 Buscar produto", placeholder="Buscar por SKU ou descrição...", key=busca_key)
+        busca = st.text_input(
+            "🔎 Buscar produto",
+            placeholder="Buscar por SKU ou descrição...",
+            key=busca_key
+        )
 
-    # 📷 Botão que liga/desliga câmera
+    # 📷 Controles do scanner
     with colQR:
-        if st.button("Scanner", type="primary", use_container_width=True):
-            st.session_state.camera_on = not st.session_state.camera_on
-        if st.session_state.camera_on:
-            if st.button("Fechar Scanner", type="secondary", use_container_width=True):
+        if not st.session_state.camera_on:
+            if st.button("📷 Scanner", type="primary", use_container_width=True):
+                st.session_state.camera_on = True
+        else:
+            if st.button("❌ Fechar", type="secondary", use_container_width=True):
                 st.session_state.camera_on = False
 
-    # 📷 Scanner aparece só se estiver ativo
+    # 📷 Scanner ativo (modo contínuo)
     if st.session_state.camera_on:
         st.info("Aponte a câmera para o QR Code")
 
         qr_code = qrcode_scanner()
 
         if qr_code:
-            st.session_state["scan_value"] = qr_code   # preenche o campo no próximo rerun
-            st.session_state.camera_on = False         # pausa a câmera para atualizar a lista
-            st.session_state.reopen_after_add = True   # reabrir após adicionar o item
-            st.success(f"Código lido: {qr_code}")
-            st.rerun()
+            now = time.time()
+
+            # evita leitura duplicada rápida
+            if (
+                qr_code != st.session_state.last_qr
+                or now - st.session_state.last_scan_time > 1.2
+            ):
+                st.session_state.last_qr = qr_code
+                st.session_state.last_scan_time = now
+
+                produto = df_produtos[df_produtos["codigo"].astype(str) == str(qr_code)]
+
+                if not produto.empty:
+                    row = produto.iloc[0]
+                    codigo = row["codigo"]
+                    preco = row["preco"]
+
+                    carrinho_map = {
+                        item["codigo"]: item
+                        for item in st.session_state.carrinho
+                    }
+
+                    if codigo in carrinho_map:
+                        idx = next(
+                            i for i, item in enumerate(st.session_state.carrinho)
+                            if item["codigo"] == codigo
+                        )
+                        st.session_state.carrinho[idx]["qtd"] += 1
+                        st.session_state.carrinho[idx]["total"] = (
+                            st.session_state.carrinho[idx]["qtd"] * preco
+                        )
+                    else:
+                        st.session_state.carrinho.append({
+                            "codigo": codigo,
+                            "descricao": row["descricao"],
+                            "qtd": 1,
+                            "preco": preco,
+                            "total": preco
+                        })
+
+                    st.toast(f"✅ {codigo} adicionado ao pedido", icon="📦")
+                else:
+                    st.warning(f"⚠️ Produto {qr_code} não encontrado")
 
     # 🔍 Filtro de produtos
     df_filtrado = df_produtos[
@@ -688,18 +740,21 @@ with tab1:
     ]
 
     with top2:
-        st.markdown(f"<div style='margin-top:8px;font-size:14px'><b>{len(df_filtrado)}</b><br>itens</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='margin-top:8px;font-size:14px'><b>{len(df_filtrado)}</b><br>itens</div>",
+            unsafe_allow_html=True
+        )
 
-
-    # 👇 CONTAINER NATIVO
+    # 👇 CONTAINER DE PRODUTOS
     container_produtos = st.container()
-
-    # 👇 MARCADOR CSS
-    # container_produtos.markdown('<div class="scroll-fix"></div>', unsafe_allow_html=True)
 
     with container_produtos:
 
-        carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
+        carrinho_map = {
+            item["codigo"]: item
+            for item in st.session_state.carrinho
+        }
+
         produtos = df_filtrado.to_dict("records")
 
         for i in range(0, len(produtos), 3):
@@ -713,7 +768,6 @@ with tab1:
                 codigo = row["codigo"]
                 preco = row["preco"]
                 ja_no_carrinho = codigo in carrinho_map
-                badge = "✅ No pedido" if ja_no_carrinho else " "
 
                 with col:
                     card = st.container(border=True)
@@ -723,14 +777,29 @@ with tab1:
                         st.markdown(f'<div class="product-desc">{row["descricao"]}</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="product-price">R$ {preco:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="product-actions">', unsafe_allow_html=True)
-                        qtd = st.number_input("Qtd", value=1, min_value=1, step=1, key=f"qtd_{codigo}_{rc}")
+                        qtd = st.number_input(
+                            "Qtd",
+                            value=1,
+                            min_value=1,
+                            step=1,
+                            key=f"qtd_{codigo}_{rc}"
+                        )
 
-                        if st.button("Adicionar ➕", key=f"add_{codigo}", type="primary", use_container_width=True):
+                        if st.button(
+                            "Adicionar ➕",
+                            key=f"add_{codigo}",
+                            type="primary",
+                            use_container_width=True
+                        ):
                             if ja_no_carrinho:
-                                idx = next(i for i, item in enumerate(st.session_state.carrinho) if item["codigo"] == codigo)
+                                idx = next(
+                                    i for i, item in enumerate(st.session_state.carrinho)
+                                    if item["codigo"] == codigo
+                                )
                                 st.session_state.carrinho[idx]["qtd"] += qtd
-                                st.session_state.carrinho[idx]["total"] = st.session_state.carrinho[idx]["qtd"] * preco
+                                st.session_state.carrinho[idx]["total"] = (
+                                    st.session_state.carrinho[idx]["qtd"] * preco
+                                )
                             else:
                                 st.session_state.carrinho.append({
                                     "codigo": codigo,
@@ -739,11 +808,6 @@ with tab1:
                                     "preco": preco,
                                     "total": qtd * preco
                                 })
-                            # Streamlit já faz rerun automaticamente; evitar salto de scroll
-                            st.session_state["clear_search"] = True
-                            if st.session_state.get("reopen_after_add"):
-                                st.session_state.camera_on = True
-                                st.session_state.reopen_after_add = False
 
                         if ja_no_carrinho:
                             qtd_total = carrinho_map[codigo]["qtd"]
@@ -751,7 +815,7 @@ with tab1:
                             st.markdown(f"✅ **No Pedido: {qtd_total} unidades**")
 
                         st.markdown("</div>", unsafe_allow_html=True)
-                        st.markdown("</div>", unsafe_allow_html=True)
+
 
 with tab2:
 
