@@ -671,9 +671,20 @@ if "last_scan_time" not in st.session_state:
 if "scan_value" not in st.session_state:
     st.session_state.scan_value = ""
 
+st.markdown("""
+<style>
+/* Texto das abas */
+div[data-baseweb="tab"] > button {
+    font-weight: 700;   /* negrito */
+    font-size: 15px;    /* opcional */
+}
+</style>
+""", unsafe_allow_html=True)
+
 tab1, tab2, tab3 = st.tabs(
     ["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"]
 )
+
 
 # Mapa de produtos já adicionados
 carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
@@ -1303,6 +1314,7 @@ else:
     st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
 st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
+
 
 
 
