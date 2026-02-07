@@ -698,6 +698,13 @@ with tab1:
             ):
                 st.session_state.last_qr = qr_code
                 st.session_state.last_scan_time = now
+                # 🔥 PREENCHE O CAMPO BUSCA
+                st.session_state[busca_key] = str(qr_code)
+
+                # Fecha a câmera automaticamente (ganho enorme de performance)
+                st.session_state.camera_on = False
+
+                st.toast(f"🔎 SKU {qr_code} localizado", icon="📦")
 
                 produto = df_produtos[df_produtos["codigo"].astype(str) == str(qr_code)]
 
