@@ -1049,6 +1049,77 @@ div[data-baseweb="tab"] > button[aria-selected="true"] {
     box-shadow: 0 4px 10px rgba(201, 163, 93, 0.25);
 }
 
+/* =====================================================
+   CORREÇÃO: STEPPER DO CAMPO "Qtd" (+ / -)
+   O spinner nativo do navegador e/ou os botões de +/- do
+   próprio Streamlit podem herdar um fundo escuro (tema do
+   sistema), escondendo o ícone. Forçamos fundo claro aqui.
+   ===================================================== */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield !important;
+}
+
+div[data-testid="stNumberInput"] {
+    background: transparent !important;
+}
+
+div[data-testid="stNumberInput"] button,
+div[data-testid="stNumberInputStepUp"],
+div[data-testid="stNumberInputStepDown"],
+button[data-testid="stNumberInputStepUp"],
+button[data-testid="stNumberInputStepDown"] {
+    background: #ffffff !important;
+    border: 1px solid var(--line) !important;
+    color: var(--zionne-green-900) !important;
+    opacity: 1 !important;
+}
+
+div[data-testid="stNumberInput"] svg,
+button[data-testid="stNumberInputStepUp"] svg,
+button[data-testid="stNumberInputStepDown"] svg {
+    fill: var(--zionne-green-900) !important;
+}
+
+/* =====================================================
+   CORREÇÃO: CAMPOS "Condição de Pagamento" / "Tipo Frete"
+   (st.selectbox). O Streamlit não renderiza um <select> puro
+   para esses campos — é um componente próprio (BaseWeb), por
+   isso a regra ".stSelectbox select" acima não tinha efeito
+   nele. Aqui miramos o elemento real, incluindo o menu que
+   abre ao clicar.
+   ===================================================== */
+div[data-baseweb="select"] > div {
+    background-color: #ffffff !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 10px !important;
+    color: var(--ink) !important;
+}
+
+div[data-baseweb="select"] * {
+    color: var(--ink) !important;
+}
+
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] ul,
+ul[role="listbox"] {
+    background-color: #ffffff !important;
+}
+
+ul[role="listbox"] li {
+    background-color: #ffffff !important;
+    color: var(--ink) !important;
+}
+
+ul[role="listbox"] li:hover {
+    background-color: #eaf4ee !important;
+}
+
 /* Esconde a barra de ferramentas padrão do Streamlit (menu Deploy/hambúrguer),
    que colidia visualmente com as abas do app. */
 [data-testid="stToolbar"],
