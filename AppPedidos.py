@@ -549,10 +549,28 @@ def calcular_total_pedido(carrinho: list) -> float:
 
 
 # =====================================================
-# CABEÇALHO / NOVO PEDIDO
+# BARRA SUPERIOR (estilo app)
 # =====================================================
+_total_atual = calcular_total_pedido(st.session_state.carrinho)
+_qtd_itens_atual = len(st.session_state.carrinho)
+
 st.markdown(
-    "<h1 style='font-size:25px;'>🛒 Bloco de Pedido - Zionne</h1>",
+    f"""
+    <div class="app-bar">
+        <div class="app-bar-brand">
+            <span class="app-bar-emoji">🛒</span>
+            <div>
+                <div class="app-bar-title">Zionne</div>
+                <div class="app-bar-subtitle">Bloco de Pedido · Feira ABUP</div>
+            </div>
+        </div>
+        <div class="app-bar-cart">
+            <span class="app-bar-cart-count">{_qtd_itens_atual}</span>
+            <span class="app-bar-cart-label">itens</span>
+            <span class="app-bar-cart-total">R$ {_total_atual:,.2f}</span>
+        </div>
+    </div>
+    """,
     unsafe_allow_html=True,
 )
 
@@ -648,12 +666,27 @@ if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=
         else:
             st.error("Preencha pelo menos Razão Social, Logradouro e Município.")
 
-# Exibe os dados (seja da consulta ou manual)
+# Exibe os dados (seja da consulta ou manual) em um cartão bem visível
 if st.session_state.dados_cliente:
     d = st.session_state.dados_cliente
     endereco = f'{d["logradouro"]}, {d["numero"]} - {d["bairro"]} | {d["municipio"]}/{d["uf"]} - CEP {d["cep"]}'
-    st.text_input("Razão Social", d["razao"], disabled=True)
-    st.text_area("Endereço", endereco, disabled=True)
+
+    if not d.get("razao"):
+        st.warning(
+            "O CNPJ foi consultado, mas a razão social veio vazia na resposta da API. "
+            "Confira os dados abaixo e complete manualmente se necessário."
+        )
+
+    st.markdown(
+        f"""
+        <div class="cliente-card">
+            <div class="cliente-card-badge">✅ CLIENTE IDENTIFICADO</div>
+            <div class="cliente-card-nome">{d.get("razao") or "— Razão social não informada —"}</div>
+            <div class="cliente-card-linha">📍 {endereco}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # =====================================================
 # ESTILOS (CSS)
@@ -681,6 +714,150 @@ st.markdown("""
     --btn-danger-hover: #d46c6c;
     --btn-whatsapp: #6ac38a;
     --btn-whatsapp-hover: #5ab67d;
+}
+
+/* =====================================================
+   REFORÇO ANTI MODO-ESCURO
+   O tema já é travado em .streamlit/config.toml, mas alguns componentes
+   nativos (popover de selectbox, inputs) podem herdar cores do sistema
+   em navegadores específicos. Este bloco garante fundo claro/texto escuro
+   em qualquer cenário.
+   ===================================================== */
+@media (prefers-color-scheme: dark) {
+    [data-testid="stAppViewContainer"],
+    [data-testid="stHeader"],
+    [data-testid="stSidebar"],
+    body {
+        background-color: var(--bg) !important;
+        color: var(--ink) !important;
+    }
+    .stTextInput input,
+    .stTextArea textarea,
+    .stNumberInput input,
+    .stSelectbox select,
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="popover"] {
+        background-color: #ffffff !important;
+        color: var(--ink) !important;
+    }
+    ul[role="listbox"] li {
+        background-color: #ffffff !important;
+        color: var(--ink) !important;
+    }
+}
+
+/* =====================================================
+   BARRA SUPERIOR (APP BAR)
+   ===================================================== */
+.app-bar {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: linear-gradient(135deg, var(--zionne-green-900) 0%, var(--zionne-green) 100%);
+    color: #ffffff !important;
+    padding: 14px 18px;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+}
+
+.app-bar * {
+    color: #ffffff !important;
+}
+
+.app-bar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.app-bar-emoji {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.app-bar-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    line-height: 1.1;
+}
+
+.app-bar-subtitle {
+    font-size: 12px;
+    opacity: 0.85;
+}
+
+.app-bar-cart {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.app-bar-cart-count {
+    font-size: 16px;
+}
+
+.app-bar-cart-label {
+    font-size: 11px;
+    opacity: 0.85;
+    margin-right: 4px;
+}
+
+.app-bar-cart-total {
+    font-size: 13px;
+    margin-left: 4px;
+}
+
+@media (max-width: 640px) {
+    .app-bar-subtitle { display: none; }
+    .app-bar-title { font-size: 16px; }
+}
+
+/* =====================================================
+   CARTÃO DE CLIENTE IDENTIFICADO
+   ===================================================== */
+.cliente-card {
+    background: #eaf4ee;
+    border: 1px solid var(--zionne-green);
+    border-left: 6px solid var(--zionne-green);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin: 8px 0 16px 0;
+    box-shadow: var(--shadow-soft);
+}
+
+.cliente-card-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: var(--zionne-green-900) !important;
+    background: #d6ecdd;
+    padding: 3px 8px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+}
+
+.cliente-card-nome {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--zionne-green-900) !important;
+    margin-bottom: 4px;
+}
+
+.cliente-card-linha {
+    font-size: 14px;
+    color: var(--ink) !important;
 }
 
 html, body, [data-testid="stAppViewContainer"] {
@@ -732,8 +909,9 @@ div[data-testid="stButton"] {
 div[data-testid="stButton"] > button {
     width: 100% !important;
     display: block !important;
-    border-radius: 10px !important;
-    height: 44px !important;
+    border-radius: 12px !important;
+    height: 48px !important;
+    font-size: 15px !important;
     font-weight: 700 !important;
     border: none !important;
     box-shadow: var(--shadow-soft) !important;
@@ -1305,8 +1483,3 @@ with tab3:
             "Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. "
             "O CSV é enviado como texto na mensagem para Zionne."
         )
-
-
-
-
-
