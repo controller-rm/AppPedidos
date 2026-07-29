@@ -569,8 +569,11 @@ st.markdown(
     _html(f"""
     <div class="app-bar">
         <div class="app-bar-brand">
-            <div class="app-bar-title">Zionne</div>
-            <div class="app-bar-subtitle">Bloco de Pedido · Feira ABUP</div>
+            <span class="app-bar-emoji">🛒</span>
+            <div>
+                <div class="app-bar-title">Zionne</div>
+                <div class="app-bar-subtitle">Bloco de Pedido · Feira ABUP</div>
+            </div>
         </div>
         <div class="app-bar-cart">
             <span class="app-bar-cart-count">{_qtd_itens_atual}</span>
@@ -593,43 +596,35 @@ rc = st.session_state.reset_counter
 # =====================================================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Source+Sans+3:wght@400;600;700&display=swap');
 
-/* =====================================================
-   SISTEMA DE DESIGN — "Porcelana & Filete Dourado"
-   Paleta e tipografia derivadas do próprio catálogo Zionne
-   (louças botânicas, filetes de ouro, tons de vinho das
-   estampas florais). Serifada para nomes de produto/marca,
-   sans-serif utilitária para interface e dados.
-   ===================================================== */
 :root {
-    --zionne-green: #1f6b3f;
-    --zionne-green-700: #17542f;
-    --zionne-green-900: #0e2e1b;
-    --zionne-gold: #b7924f;
-    --zionne-gold-soft: rgba(183, 146, 79, 0.16);
-    --zionne-wine: #7a2a38;
-    --zionne-wine-700: #5e1f2a;
-    --ink: #23261f;
-    --muted: #726e62;
-    --bg: #f3f5ee;
+    --zionne-green: #1f7a3a;
+    --zionne-green-700: #14652f;
+    --zionne-green-900: #0d3f1e;
+    --zionne-gold: #c9a35d;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --bg: #f6f4ef;
     --card: #ffffff;
-    --line: #e2e4da;
-    --shadow: 0 10px 26px rgba(14, 46, 27, 0.09);
-    --shadow-soft: 0 1px 3px rgba(14, 46, 27, 0.08);
-    --radius: 10px;
-    --serif: "Playfair Display", Georgia, serif;
-    --sans: "Source Sans 3", sans-serif;
-    --btn-primary: var(--zionne-green);
-    --btn-primary-hover: var(--zionne-green-700);
-    --btn-danger: var(--zionne-wine);
-    --btn-danger-hover: var(--zionne-wine-700);
-    --btn-whatsapp: #1f8a4c;
-    --btn-whatsapp-hover: #176b3b;
+    --line: #e5e7eb;
+    --shadow: 0 8px 24px rgba(17, 24, 39, 0.10);
+    --shadow-soft: 0 2px 8px rgba(17, 24, 39, 0.08);
+    --radius: 14px;
+    --btn-primary: #54b97a;
+    --btn-primary-hover: #46aa6c;
+    --btn-danger: #e07a7a;
+    --btn-danger-hover: #d46c6c;
+    --btn-whatsapp: #6ac38a;
+    --btn-whatsapp-hover: #5ab67d;
 }
 
 /* =====================================================
    REFORÇO ANTI MODO-ESCURO
+   O tema já é travado em .streamlit/config.toml, mas alguns componentes
+   nativos (popover de selectbox, inputs) podem herdar cores do sistema
+   em navegadores específicos. Este bloco garante fundo claro/texto escuro
+   em qualquer cenário.
    ===================================================== */
 @media (prefers-color-scheme: dark) {
     [data-testid="stAppViewContainer"],
@@ -655,130 +650,6 @@ st.markdown("""
 }
 
 /* =====================================================
-   BASE
-   ===================================================== */
-html, body, [data-testid="stAppViewContainer"] {
-    background: var(--bg) !important;
-}
-
-[data-testid="stAppViewContainer"] * {
-    font-family: var(--sans);
-    color: var(--ink);
-}
-
-h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-    font-family: var(--sans) !important;
-    letter-spacing: 0.2px;
-}
-
-/* Elementos de identidade de marca/produto usam a serifada,
-   com prioridade sobre o reset acima. */
-.zn-serif,
-.app-bar-title,
-.cliente-card-nome,
-.produto-nome,
-.zn-h1 {
-    font-family: var(--serif) !important;
-    letter-spacing: 0.1px;
-}
-
-.zn-eyebrow {
-    display: block;
-    font-family: var(--sans) !important;
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 1.6px;
-    text-transform: uppercase;
-    color: var(--muted) !important;
-}
-
-.zn-rule {
-    border: none;
-    border-top: 1px solid var(--zionne-gold);
-    opacity: 0.55;
-    margin: 8px 0;
-}
-
-.zn-h1 {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--ink) !important;
-    margin: 0 0 4px 0;
-}
-
-[data-testid="stHeader"] {
-    background: transparent !important;
-}
-
-[data-testid="stAppViewContainer"] > .main .block-container {
-    padding-top: 1.75rem;
-    padding-bottom: 2.5rem;
-    max-width: 1180px;
-}
-
-/* =====================================================
-   CAMPOS DE FORMULÁRIO
-   ===================================================== */
-.stTextInput input,
-.stTextArea textarea,
-.stNumberInput input,
-.stSelectbox select {
-    border: 1px solid var(--line) !important;
-    border-radius: 8px !important;
-    padding: 10px 12px !important;
-    background: #fff !important;
-    box-shadow: none !important;
-}
-
-.stTextInput input:focus,
-.stTextArea textarea:focus,
-.stNumberInput input:focus,
-.stSelectbox select:focus {
-    border-color: var(--zionne-green) !important;
-    box-shadow: 0 0 0 3px rgba(31, 107, 63, 0.14) !important;
-}
-
-/* =====================================================
-   BOTÕES — planos, sem gradiente, cantos discretos
-   ===================================================== */
-div[data-testid="stButton"] {
-    width: 100% !important;
-}
-
-div[data-testid="stButton"] > button {
-    width: 100% !important;
-    display: block !important;
-    border-radius: 8px !important;
-    height: 46px !important;
-    font-size: 14.5px !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.2px;
-    border: none !important;
-    box-shadow: none !important;
-    transition: background 0.15s ease, transform 0.1s ease;
-}
-
-button[kind="primary"] {
-    background: var(--btn-primary) !important;
-    color: white !important;
-}
-
-button[kind="primary"]:hover {
-    background: var(--btn-primary-hover) !important;
-}
-
-button[kind="secondary"] {
-    background: transparent !important;
-    color: var(--btn-danger) !important;
-    border: 1.5px solid var(--btn-danger) !important;
-}
-
-button[kind="secondary"]:hover {
-    background: var(--btn-danger) !important;
-    color: white !important;
-}
-
-/* =====================================================
    BARRA SUPERIOR (APP BAR)
    ===================================================== */
 .app-bar {
@@ -789,11 +660,12 @@ button[kind="secondary"]:hover {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: var(--zionne-green-900);
+    background: linear-gradient(135deg, var(--zionne-green-900) 0%, var(--zionne-green) 100%);
     color: #ffffff !important;
-    padding: 16px 20px;
-    border-bottom: 2px solid var(--zionne-gold);
-    margin-bottom: 18px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
 }
 
 .app-bar * {
@@ -802,151 +674,270 @@ button[kind="secondary"]:hover {
 
 .app-bar-brand {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    gap: 10px;
+}
+
+.app-bar-emoji {
+    font-size: 28px;
+    line-height: 1;
 }
 
 .app-bar-title {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     letter-spacing: 0.3px;
     line-height: 1.1;
 }
 
 .app-bar-subtitle {
-    font-size: 11px;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    opacity: 0.75;
+    font-size: 12px;
+    opacity: 0.85;
 }
 
 .app-bar-cart {
     display: flex;
     align-items: baseline;
     gap: 6px;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 6px 12px;
     border-radius: 999px;
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
 }
 
 .app-bar-cart-count {
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 16px;
 }
 
 .app-bar-cart-label {
     font-size: 11px;
-    opacity: 0.8;
+    opacity: 0.85;
     margin-right: 4px;
 }
 
 .app-bar-cart-total {
     font-size: 13px;
     margin-left: 4px;
-    color: var(--zionne-gold) !important;
-    font-weight: 700;
 }
 
 @media (max-width: 640px) {
     .app-bar-subtitle { display: none; }
-    .app-bar-title { font-size: 18px; }
+    .app-bar-title { font-size: 16px; }
 }
 
 /* =====================================================
    CARTÃO DE CLIENTE IDENTIFICADO
    ===================================================== */
 .cliente-card {
-    background: var(--card);
-    border: 1px solid var(--line);
+    background: #eaf4ee;
+    border: 1px solid var(--zionne-green);
+    border-left: 6px solid var(--zionne-green);
     border-radius: var(--radius);
-    padding: 16px 18px;
+    padding: 14px 16px;
     margin: 8px 0 16px 0;
     box-shadow: var(--shadow-soft);
 }
 
 .cliente-card-badge {
-    display: block;
-    font-size: 10.5px;
+    display: inline-block;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 1.6px;
-    text-transform: uppercase;
-    color: var(--zionne-green) !important;
+    letter-spacing: 0.4px;
+    color: var(--zionne-green-900) !important;
+    background: #d6ecdd;
+    padding: 3px 8px;
+    border-radius: 999px;
     margin-bottom: 6px;
 }
 
 .cliente-card-nome {
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 700;
-    color: var(--ink) !important;
-    margin-bottom: 6px;
+    color: var(--zionne-green-900) !important;
+    margin-bottom: 4px;
 }
 
 .cliente-card-linha {
-    font-size: 13.5px;
-    color: var(--muted) !important;
+    font-size: 14px;
+    color: var(--ink) !important;
+}
+
+html, body, [data-testid="stAppViewContainer"] {
+    background: radial-gradient(1200px 600px at 10% -10%, #ffffff 0%, var(--bg) 50%, #f0efe9 100%) !important;
+}
+
+[data-testid="stAppViewContainer"] * {
+    font-family: "Source Sans 3", sans-serif;
+    color: var(--ink);
+}
+
+h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+    font-family: "Source Sans 3", sans-serif !important;
+    letter-spacing: 0.1px;
+}
+
+[data-testid="stHeader"] {
+    background: transparent !important;
+}
+
+[data-testid="stAppViewContainer"] > .main .block-container {
+    padding-top: 2rem;
+    padding-bottom: 2.5rem;
+}
+
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input,
+.stSelectbox select {
+    border: 1px solid var(--line) !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
+    background: #fff !important;
+    box-shadow: inset 0 1px 0 rgba(17,24,39,0.02);
+}
+
+.stTextInput input:focus,
+.stTextArea textarea:focus,
+.stNumberInput input:focus,
+.stSelectbox select:focus {
+    border-color: var(--zionne-green) !important;
+    box-shadow: 0 0 0 3px rgba(31, 122, 58, 0.18) !important;
+}
+
+div[data-testid="stButton"] {
+    width: 100% !important;
+}
+
+div[data-testid="stButton"] > button {
+    width: 100% !important;
+    display: block !important;
+    border-radius: 12px !important;
+    height: 48px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    border: none !important;
+    box-shadow: var(--shadow-soft) !important;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+button[kind="primary"] {
+    background: linear-gradient(180deg, #7ad0a0 0%, var(--btn-primary) 100%) !important;
+    color: white !important;
+}
+
+button[kind="primary"]:hover {
+    background: linear-gradient(180deg, #6fc995 0%, var(--btn-primary-hover) 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(17, 24, 39, 0.16) !important;
+}
+
+button[kind="secondary"] {
+    background: var(--btn-danger) !important;
+    color: white !important;
+}
+
+button[kind="secondary"]:hover {
+    background: var(--btn-danger-hover) !important;
+}
+
+.card-produto {
+    border: 1px solid var(--line);
+    border-left: 6px solid var(--zionne-green);
+    padding: 14px 14px 10px 14px;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.card-inner {
+    background: #f6f1e7;
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.product-sku {
+    display: inline-block;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--zionne-green-900);
+    background: #eaf4ee;
+    padding: 4px 8px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+}
+
+.product-desc {
+    font-size: 16px;
+    color: var(--ink);
+    min-height: 40px;
+}
+
+.product-price {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--zionne-green-900);
+    margin-top: 8px;
+    background: #eaf4ee;
+    padding: 6px 8px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.product-actions {
+    margin-top: 10px;
+}
+
+.product-actions .stNumberInput,
+.product-actions .stButton {
+    margin-top: 6px;
+}
+
+.product-card-marker {
+    display: none;
+}
+
+.product-status {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.product-status b {
+    color: var(--ink);
 }
 
 /* =====================================================
-   CARDS DE PRODUTO / ITEM DO CARRINHO
-   Rótulo estilo "placa de catálogo" (SKU discreto),
-   nome em serifada, filete dourado como divisor —
-   o motivo assinatura repetido em todo o app.
+   CARD PADRÃO (produto / item do carrinho)
+   Cabeçalho com SKU + badge, divisor e grade de campos,
+   inspirado em cards de pedidos de apps de referência.
    ===================================================== */
 .item-card-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 2px;
-}
-
-.produto-sku {
-    font-family: var(--sans) !important;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.4px;
-    color: var(--muted) !important;
-    text-transform: uppercase;
-}
-
-.produto-nome {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--ink) !important;
-    line-height: 1.3;
-    margin: 4px 0 10px 0;
-    min-height: 42px;
+    margin-bottom: 6px;
 }
 
 .status-badge-gold {
     display: inline-block;
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.3px;
     color: var(--zionne-green-900) !important;
-    background: transparent;
-    border: 1px solid var(--zionne-gold);
-    padding: 3px 9px;
+    background: rgba(201, 163, 93, 0.28);
+    padding: 4px 10px;
     border-radius: 999px;
     white-space: nowrap;
 }
 
 .card-divider {
     border: none;
-    border-top: 1px solid var(--zionne-gold);
-    opacity: 0.5;
+    border-top: 1px dashed var(--line);
     margin: 10px 0;
-}
-
-.product-price {
-    font-family: var(--serif) !important;
-    font-size: 21px;
-    font-weight: 700;
-    color: var(--zionne-green-900) !important;
 }
 
 .card-grid {
@@ -958,32 +949,37 @@ button[kind="secondary"]:hover {
 
 .card-field-label {
     display: block;
-    font-size: 10.5px;
-    letter-spacing: 0.4px;
-    color: var(--muted) !important;
+    font-size: 11px;
+    color: var(--muted);
     margin-bottom: 2px;
 }
 
 .card-field-value {
     display: block;
     font-size: 14px;
-    font-weight: 600;
-    color: var(--ink) !important;
+    font-weight: 700;
+    color: var(--ink);
 }
 
 .card-field-value-strong {
-    font-family: var(--serif) !important;
     color: var(--zionne-green-900) !important;
-    font-size: 16px;
+    font-size: 15px;
 }
 
 @media (max-width: 480px) {
+    .card-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
     .card-field-label { font-size: 10px; }
     .card-field-value { font-size: 12.5px; }
 }
 
 /* =====================================================
    CORREÇÃO DO CAMPO "Qtd" (stepper preto)
+   O spinner nativo do navegador (setas +/-) em alguns
+   celulares/navegadores renderiza com fundo escuro sólido,
+   escondendo os controles. Substituímos pelo visual do app.
    ===================================================== */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
@@ -1017,11 +1013,11 @@ div[data-testid="stNumberInput"] svg {
 }
 
 div[data-testid="stVerticalBlock"]:has(.search-row-marker) .stTextInput input {
-    height: 38px !important;
+    height: 36px !important;
 }
 
 div[data-testid="stVerticalBlock"]:has(.search-row-marker) div[data-testid="stButton"] > button {
-    height: 38px !important;
+    height: 36px !important;
     border-radius: 8px !important;
     font-size: 12px !important;
     font-weight: 700 !important;
@@ -1034,7 +1030,7 @@ div[data-testid="stVerticalBlock"]:has(.search-row-marker) div[data-testid="stBu
 
 div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stDownloadButton"] > button,
 div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stLinkButton"] a {
-    height: 38px !important;
+    height: 36px !important;
     border-radius: 8px !important;
     font-size: 12px !important;
     font-weight: 700 !important;
@@ -1048,101 +1044,120 @@ div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stDo
 }
 
 div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stDownloadButton"] > button:hover {
-    background: #9c7c40 !important;
+    background: #b4914f !important;
 }
 
 div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stLinkButton"] a {
-    background: var(--btn-whatsapp) !important;
+    background: #65c37f !important;
     color: white !important;
 }
 
 div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stLinkButton"] a:hover {
-    background: var(--btn-whatsapp-hover) !important;
+    background: #57b571 !important;
 }
 
-/* =====================================================
-   ABAS — nav discreta com filete dourado, sem "pílulas"
-   ===================================================== */
-div[data-baseweb="tab-list"] {
-    gap: 4px;
-    padding-bottom: 0;
-    border-bottom: 1px solid var(--line);
+div[data-testid="stTabs"] button {
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 700 !important;
 }
 
-div[data-baseweb="tab"] > button {
-    font-weight: 600;
-    font-size: 15px;
-    padding: 10px 16px;
-    border-radius: 0;
-    color: var(--muted) !important;
-    transition: color 0.15s ease;
-}
-
-div[data-baseweb="tab"] > button:hover {
+div[data-testid="stTabs"] button[aria-selected="true"] {
     color: var(--zionne-green-900) !important;
-}
-
-div[data-baseweb="tab"] > button[aria-selected="true"] {
-    font-weight: 700;
-    color: var(--zionne-green-900) !important;
-    background-color: transparent !important;
-    border-bottom: 2px solid var(--zionne-gold) !important;
-    box-shadow: none !important;
+    border-bottom: 3px solid var(--zionne-gold) !important;
 }
 
 div[data-testid="stLinkButton"] a {
     display: block !important;
     width: 100% !important;
     text-align: center !important;
-    padding: 14px 12px !important;
-    border-radius: 8px !important;
-    font-size: 16px !important;
+    padding: 16px 12px !important;
+    border-radius: 12px !important;
+    font-size: 18px !important;
     font-weight: 700 !important;
-    box-shadow: none !important;
-    transition: background 0.15s ease !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18) !important;
+    transition: transform 0.12s ease, box-shadow 0.12s ease !important;
     margin-top: 10px !important;
 }
 
 a[href*="wa.me"] {
-    background: var(--btn-whatsapp) !important;
+    background: linear-gradient(90deg, var(--btn-whatsapp), #4fbf7a) !important;
     color: white !important;
     border: none !important;
 }
 
 div[data-testid="stLinkButton"] a:hover {
-    background: var(--btn-whatsapp-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.22) !important;
+    background: linear-gradient(90deg, var(--btn-whatsapp-hover), #45b870) !important;
+}
+
+section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("PRODUTOS")) + div {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("CARRINHO")) + div {
+    height: calc(100vh - 190px);
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+@media (max-width: 768px) {
+    section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("PRODUTOS")) + div {
+        height: calc(100vh - 150px) !important;
+    }
+    section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("CARRINHO")) + div {
+        height: calc(100vh - 140px) !important;
+    }
+    div[data-testid="column"] {
+        padding-left: 0px !important;
+        padding-right: 0px !important;
+    }
 }
 
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-thumb {
-    background: #c9c4b4;
+    background: #c1c1c1;
     border-radius: 10px;
 }
-::-webkit-scrollbar-thumb:hover { background: #a39d89; }
+::-webkit-scrollbar-thumb:hover { background: #888; }
 
 .total-box {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    background: var(--zionne-green-900);
-    padding: 16px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    background: #ffffff;
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
     position: sticky;
     bottom: 0;
     z-index: 10;
-    border-top: 2px solid var(--zionne-gold);
+    border: 1px solid var(--line);
 }
 
-.total-box-label {
-    color: rgba(255, 255, 255, 0.75) !important;
+/* Container das abas */
+div[data-baseweb="tab-list"] {
+    gap: 10px;
+    padding-bottom: 6px;
 }
 
-.total-box-value {
-    font-family: var(--serif) !important;
-    font-size: 24px;
+div[data-baseweb="tab"] > button {
     font-weight: 700;
-    color: #ffffff !important;
+    font-size: 16px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    transition: all 0.2s ease-in-out;
+}
+
+div[data-baseweb="tab"] > button:hover {
+    background-color: rgba(31, 122, 58, 0.08);
+}
+
+div[data-baseweb="tab"] > button[aria-selected="true"] {
+    font-weight: 900;
+    color: var(--zionne-green-900) !important;
+    background-color: rgba(201, 163, 93, 0.18);
+    border-bottom: 3px solid var(--zionne-gold) !important;
+    box-shadow: 0 4px 10px rgba(201, 163, 93, 0.25);
 }
 
 /* Esconde a barra de ferramentas padrão do Streamlit (menu Deploy/hambúrguer),
@@ -1167,7 +1182,7 @@ with tab_cliente:
     client_card = st.container(border=True)
     with client_card:
         st.markdown(
-            "<h1 class='zn-h1'>Dados do Cliente</h1>",
+            "<h1 style='font-size:25px;'>🏢 Dados do Cliente</h1>",
             unsafe_allow_html=True,
         )
         col_cnpj, col_btn = st.columns([3, 1])
@@ -1197,7 +1212,7 @@ with tab_cliente:
     # Campos para entrada manual (sempre visíveis se a consulta não retornou dados)
     if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True) or st.session_state.dados_cliente is None:
         st.markdown(
-            "<p class='zn-eyebrow' style='margin-bottom:10px;font-size:12.5px;'>Inserir dados manualmente</p>",
+            "<h1 style='font-size:20px;'>📝 Inserir Dados Manualmente</h1>",
             unsafe_allow_html=True,
         )
 
@@ -1261,7 +1276,7 @@ with tab_cliente:
         st.markdown(
             _html(f"""
             <div class="cliente-card">
-                <div class="cliente-card-badge">✓ Cliente identificado</div>
+                <div class="cliente-card-badge">✅ CLIENTE IDENTIFICADO</div>
                 <div class="cliente-card-nome">{d.get("razao") or "— Razão social não informada —"}</div>
                 <div class="cliente-card-linha">📍 {endereco}</div>
             </div>
@@ -1384,17 +1399,17 @@ with tab_produtos:
                     card = st.container(border=True)
                     with card:
                         badge_html = (
-                            f'<span class="status-badge-gold">✓ {carrinho_map[codigo]["qtd"]} no pedido</span>'
+                            f'<span class="status-badge-gold">✅ {carrinho_map[codigo]["qtd"]} no pedido</span>'
                             if ja_no_carrinho else ""
                         )
                         st.markdown(
                             _html(f"""
                             <div class="item-card">
                                 <div class="item-card-header">
-                                    <span class="produto-sku">Nº {codigo}</span>
+                                    <span class="product-sku">SKU {codigo}</span>
                                     {badge_html}
                                 </div>
-                                <div class="produto-nome">{row["descricao"]}</div>
+                                <div class="product-desc">{row["descricao"]}</div>
                                 <hr class="card-divider">
                                 <div class="product-price">R$ {preco:.2f}</div>
                             </div>
@@ -1442,12 +1457,11 @@ with tab_carrinho:
             st.caption("Itens adicionados")
         with top2:
             st.markdown(
-                _html(f"""
-                <div style="text-align:right;margin-top:2px">
-                    <span class="zn-eyebrow" style="margin-bottom:2px;">{len(st.session_state.carrinho)} itens</span>
-                    <span class="card-field-value-strong" style="font-size:17px;">R$ {total_pedido:,.2f}</span>
-                </div>
-                """),
+                f"<div style='text-align:right;margin-top:6px'>"
+                f"<b>{len(st.session_state.carrinho)}</b><br>itens"
+                f"<div style='font-size:16px;color:#6b7280;margin-top:4px'>"
+                f"Total: R$ {total_pedido:,.2f}"
+                f"</div></div>",
                 unsafe_allow_html=True,
             )
 
@@ -1469,10 +1483,10 @@ with tab_carrinho:
                         _html(f"""
                         <div class="item-card">
                             <div class="item-card-header">
-                                <span class="produto-sku">Nº {item["codigo"]}</span>
-                                <span class="status-badge-gold">✓ No pedido</span>
+                                <span class="product-sku">SKU {item["codigo"]}</span>
+                                <span class="status-badge-gold">✅ No pedido</span>
                             </div>
-                            <div class="produto-nome">{item["descricao"]}</div>
+                            <div class="product-desc">{item["descricao"]}</div>
                             <hr class="card-divider">
                             <div class="card-grid">
                                 <div>
@@ -1509,12 +1523,7 @@ with tab_carrinho:
                         )
 
         st.markdown(
-            _html(f"""
-            <div class="total-box">
-                <span class="zn-eyebrow total-box-label">Total do pedido</span>
-                <span class="total-box-value">R$ {total_pedido:,.2f}</span>
-            </div>
-            """),
+            f"<div class='total-box'><h3>💰 TOTAL: R$ {total_pedido:,.2f}</h3></div>",
             unsafe_allow_html=True,
         )
     else:
