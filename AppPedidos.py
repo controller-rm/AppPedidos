@@ -897,6 +897,106 @@ button[kind="secondary"]:hover {
     color: var(--ink);
 }
 
+/* =====================================================
+   CARD PADRÃO (produto / item do carrinho)
+   Cabeçalho com SKU + badge, divisor e grade de campos,
+   inspirado em cards de pedidos de apps de referência.
+   ===================================================== */
+.item-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.status-badge-gold {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--zionne-green-900) !important;
+    background: rgba(201, 163, 93, 0.28);
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.card-divider {
+    border: none;
+    border-top: 1px dashed var(--line);
+    margin: 10px 0;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.card-field-label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 2px;
+}
+
+.card-field-value {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.card-field-value-strong {
+    color: var(--zionne-green-900) !important;
+    font-size: 15px;
+}
+
+@media (max-width: 480px) {
+    .card-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+    .card-field-label { font-size: 10px; }
+    .card-field-value { font-size: 12.5px; }
+}
+
+/* =====================================================
+   CORREÇÃO DO CAMPO "Qtd" (stepper preto)
+   O spinner nativo do navegador (setas +/-) em alguns
+   celulares/navegadores renderiza com fundo escuro sólido,
+   escondendo os controles. Substituímos pelo visual do app.
+   ===================================================== */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+    opacity: 1 !important;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield !important;
+}
+
+div[data-testid="stNumberInput"] {
+    background: transparent !important;
+}
+
+div[data-testid="stNumberInput"] button,
+div[data-testid="stNumberInput"] [role="button"] {
+    background: #ffffff !important;
+    color: var(--zionne-green-900) !important;
+    border: 1px solid var(--line) !important;
+    opacity: 1 !important;
+}
+
+div[data-testid="stNumberInput"] svg {
+    fill: var(--zionne-green-900) !important;
+}
+
 .search-row-marker {
     display: none;
 }
@@ -1287,10 +1387,24 @@ with tab_produtos:
                 with col:
                     card = st.container(border=True)
                     with card:
-                        st.markdown('<div class="card-inner">', unsafe_allow_html=True)
-                        st.markdown(f'<div class="product-sku">SKU {codigo}</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="product-desc">{row["descricao"]}</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="product-price">R$ {preco:.2f}</div>', unsafe_allow_html=True)
+                        badge_html = (
+                            f'<span class="status-badge-gold">✅ {carrinho_map[codigo]["qtd"]} no pedido</span>'
+                            if ja_no_carrinho else ""
+                        )
+                        st.markdown(
+                            f"""
+                            <div class="item-card">
+                                <div class="item-card-header">
+                                    <span class="product-sku">SKU {codigo}</span>
+                                    {badge_html}
+                                </div>
+                                <div class="product-desc">{row["descricao"]}</div>
+                                <hr class="card-divider">
+                                <div class="product-price">R$ {preco:.2f}</div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
                         qtd = st.number_input(
                             "Qtd", value=1, min_value=1, step=1, key=f"qtd_{codigo}_{rc}"
@@ -1317,13 +1431,6 @@ with tab_produtos:
                                     "total": qtd * preco,
                                 })
                             st.rerun()
-
-                        if ja_no_carrinho:
-                            qtd_total = carrinho_map[codigo]["qtd"]
-                            st.markdown("🟢 **Este produto já está no pedido**")
-                            st.markdown(f"✅ **No Pedido: {qtd_total} unidades**")
-
-                        st.markdown("</div>", unsafe_allow_html=True)
 
 # =====================================================
 # ABA CARRINHO
@@ -1361,34 +1468,48 @@ with tab_carrinho:
             for i, item in enumerate(st.session_state.carrinho):
                 card = st.container(border=True)
                 with card:
-                    st.markdown('<div class="card-inner">', unsafe_allow_html=True)
-                    st.markdown(f'<div class="product-sku">SKU {item["codigo"]}</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="product-desc">{item["descricao"]}</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="product-price">R$ {item["preco"]:.2f}</div>', unsafe_allow_html=True)
                     st.markdown(
-                        f'<div class="product-status">Total do item: <b>R$ {item["total"]:.2f}</b></div>',
+                        f"""
+                        <div class="item-card">
+                            <div class="item-card-header">
+                                <span class="product-sku">SKU {item["codigo"]}</span>
+                                <span class="status-badge-gold">✅ No pedido</span>
+                            </div>
+                            <div class="product-desc">{item["descricao"]}</div>
+                            <hr class="card-divider">
+                            <div class="card-grid">
+                                <div>
+                                    <span class="card-field-label">Preço Unit.</span>
+                                    <span class="card-field-value">R$ {item["preco"]:.2f}</span>
+                                </div>
+                                <div>
+                                    <span class="card-field-label">Quantidade</span>
+                                    <span class="card-field-value">{item["qtd"]} un.</span>
+                                </div>
+                                <div>
+                                    <span class="card-field-label">Total do Item</span>
+                                    <span class="card-field-value card-field-value-strong">R$ {item["total"]:.2f}</span>
+                                </div>
+                            </div>
+                        </div>
+                        """,
                         unsafe_allow_html=True,
                     )
 
-                    st.markdown('<div class="product-actions">', unsafe_allow_html=True)
                     key_qtd = f"edit_qtd_{i}_{rc}"
-                    st.number_input("Qtd", value=item["qtd"], min_value=1, step=1, key=key_qtd)
+                    st.number_input("Nova quantidade", value=item["qtd"], min_value=1, step=1, key=key_qtd)
 
-                    st.button(
-                        "Atualizar 🔄", key=f"update_{i}", type="primary", use_container_width=True,
-                        on_click=atualizar_item, args=(i, key_qtd, item["preco"]),
-                    )
-                    st.button(
-                        "Remover 🗑️", key=f"remove_{i}", type="secondary", use_container_width=True,
-                        on_click=remover_item, args=(i,),
-                    )
-
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    st.markdown(
-                        f'<div class="product-status">✅ No Pedido: <b>{item["qtd"]} unidades</b></div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    col_upd, col_rem = st.columns(2)
+                    with col_upd:
+                        st.button(
+                            "Atualizar 🔄", key=f"update_{i}", type="primary", use_container_width=True,
+                            on_click=atualizar_item, args=(i, key_qtd, item["preco"]),
+                        )
+                    with col_rem:
+                        st.button(
+                            "Remover 🗑️", key=f"remove_{i}", type="secondary", use_container_width=True,
+                            on_click=remover_item, args=(i,),
+                        )
 
         st.markdown(
             f"<div class='total-box'><h3>💰 TOTAL: R$ {total_pedido:,.2f}</h3></div>",
