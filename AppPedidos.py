@@ -548,6 +548,17 @@ def calcular_total_pedido(carrinho: list) -> float:
     return sum(item["total"] for item in carrinho) if carrinho else 0.0
 
 
+def _html(bloco: str) -> str:
+    """Achata um bloco HTML multilinha (indentado para leitura no código) em uma
+    única linha antes de passar para st.markdown.
+
+    Sem isso, o Markdown interpreta linhas com recuo (usado só para deixar o
+    código Python legível) como um bloco de código, e o HTML aparece como
+    texto cru na tela em vez de ser renderizado.
+    """
+    return "".join(linha.strip() for linha in bloco.strip().splitlines())
+
+
 # =====================================================
 # BARRA SUPERIOR (estilo app)
 # =====================================================
@@ -555,7 +566,7 @@ _total_atual = calcular_total_pedido(st.session_state.carrinho)
 _qtd_itens_atual = len(st.session_state.carrinho)
 
 st.markdown(
-    f"""
+    _html(f"""
     <div class="app-bar">
         <div class="app-bar-brand">
             <span class="app-bar-emoji">🛒</span>
@@ -570,7 +581,7 @@ st.markdown(
             <span class="app-bar-cart-total">R$ {_total_atual:,.2f}</span>
         </div>
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
@@ -1263,13 +1274,13 @@ with tab_cliente:
             )
 
         st.markdown(
-            f"""
+            _html(f"""
             <div class="cliente-card">
                 <div class="cliente-card-badge">✅ CLIENTE IDENTIFICADO</div>
                 <div class="cliente-card-nome">{d.get("razao") or "— Razão social não informada —"}</div>
                 <div class="cliente-card-linha">📍 {endereco}</div>
             </div>
-            """,
+            """),
             unsafe_allow_html=True,
         )
 
@@ -1392,7 +1403,7 @@ with tab_produtos:
                             if ja_no_carrinho else ""
                         )
                         st.markdown(
-                            f"""
+                            _html(f"""
                             <div class="item-card">
                                 <div class="item-card-header">
                                     <span class="product-sku">SKU {codigo}</span>
@@ -1402,7 +1413,7 @@ with tab_produtos:
                                 <hr class="card-divider">
                                 <div class="product-price">R$ {preco:.2f}</div>
                             </div>
-                            """,
+                            """),
                             unsafe_allow_html=True,
                         )
 
@@ -1469,7 +1480,7 @@ with tab_carrinho:
                 card = st.container(border=True)
                 with card:
                     st.markdown(
-                        f"""
+                        _html(f"""
                         <div class="item-card">
                             <div class="item-card-header">
                                 <span class="product-sku">SKU {item["codigo"]}</span>
@@ -1492,7 +1503,7 @@ with tab_carrinho:
                                 </div>
                             </div>
                         </div>
-                        """,
+                        """),
                         unsafe_allow_html=True,
                     )
 
