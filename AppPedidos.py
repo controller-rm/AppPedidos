@@ -581,114 +581,6 @@ if st.button("🆕 Novo Pedido", type="primary", use_container_width=True):
 rc = st.session_state.reset_counter
 
 # =====================================================
-# DADOS CLIENTE
-# =====================================================
-client_card = st.container(border=True)
-with client_card:
-    st.markdown(
-        "<h1 style='font-size:25px;'>🏢 Dados do Cliente</h1>",
-        unsafe_allow_html=True,
-    )
-    col_cnpj, col_btn = st.columns([3, 1])
-    with col_cnpj:
-        cnpj = st.text_input("CNPJ *", placeholder="00.000.000/0000-00", key=f"cnpj_{rc}")
-    with col_btn:
-        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-        consultar = st.button("Consultar CNPJ", type="primary", use_container_width=True)
-
-    telefone = st.text_input("📞 WhatsApp *", placeholder="(00) 00000-0000", key=f"tel_{rc}")
-    email = st.text_input("✉️ E-mail *", placeholder="email@exemplo.com", key=f"email_{rc}")
-    ie = st.text_input("🧾 Inscrição Estadual *", placeholder="000.000.000.000", key=f"ie_{rc}")
-    telefone_zionne = st.text_input(
-        "📞 Telefone WhatsApp Zionne", placeholder="(00) 00000-0000", key=f"tel_zionne_{rc}"
-    )
-
-    if consultar:
-        dados, erro = consulta_cnpj(cnpj)
-        if erro:
-            st.error(erro)
-            st.warning("CNPJ não encontrado. Insira os dados manualmente abaixo.")
-            st.session_state.dados_cliente = None
-        else:
-            st.session_state.dados_cliente = dados
-            st.success("Cliente localizado!")
-
-# Campos para entrada manual (sempre visíveis se a consulta não retornou dados)
-if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True) or st.session_state.dados_cliente is None:
-    st.markdown(
-        "<h1 style='font-size:20px;'>📝 Inserir Dados Manualmente</h1>",
-        unsafe_allow_html=True,
-    )
-
-    cliente_atual = st.session_state.dados_cliente or {}
-    razao_manual = st.text_input(
-        "🏢 Razão Social", placeholder="Razão Social",
-        value=cliente_atual.get("razao", ""), key=f"razao_manual_{rc}",
-    )
-    logradouro_manual = st.text_input(
-        "📍 Logradouro", placeholder="Rua, Avenida...",
-        value=cliente_atual.get("logradouro", ""), key=f"logradouro_manual_{rc}",
-    )
-    numero_manual = st.text_input(
-        "🔢 Número", placeholder="Número",
-        value=cliente_atual.get("numero", ""), key=f"numero_manual_{rc}",
-    )
-    bairro_manual = st.text_input(
-        "🏘️ Bairro", placeholder="Bairro",
-        value=cliente_atual.get("bairro", ""), key=f"bairro_manual_{rc}",
-    )
-    municipio_manual = st.text_input(
-        "🏙️ Município", placeholder="Cidade",
-        value=cliente_atual.get("municipio", ""), key=f"municipio_manual_{rc}",
-    )
-    uf_manual = st.selectbox(
-        "UF", UFS,
-        index=UFS.index(cliente_atual.get("uf", "SP")) if cliente_atual.get("uf") in UFS else UFS.index("SP"),
-        key=f"uf_manual_{rc}",
-    )
-    cep_manual = st.text_input(
-        "🏷️ CEP", placeholder="00000-000",
-        value=cliente_atual.get("cep", ""), key=f"cep_manual_{rc}",
-    )
-
-    if st.button("Salvar Dados Manuais", type="primary", use_container_width=True):
-        if razao_manual and logradouro_manual and municipio_manual:
-            st.session_state.dados_cliente = {
-                "razao": razao_manual,
-                "logradouro": logradouro_manual,
-                "numero": numero_manual,
-                "bairro": bairro_manual,
-                "municipio": municipio_manual,
-                "uf": uf_manual,
-                "cep": cep_manual,
-            }
-            st.success("Dados do cliente salvos manualmente!")
-        else:
-            st.error("Preencha pelo menos Razão Social, Logradouro e Município.")
-
-# Exibe os dados (seja da consulta ou manual) em um cartão bem visível
-if st.session_state.dados_cliente:
-    d = st.session_state.dados_cliente
-    endereco = f'{d["logradouro"]}, {d["numero"]} - {d["bairro"]} | {d["municipio"]}/{d["uf"]} - CEP {d["cep"]}'
-
-    if not d.get("razao"):
-        st.warning(
-            "O CNPJ foi consultado, mas a razão social veio vazia na resposta da API. "
-            "Confira os dados abaixo e complete manualmente se necessário."
-        )
-
-    st.markdown(
-        f"""
-        <div class="cliente-card">
-            <div class="cliente-card-badge">✅ CLIENTE IDENTIFICADO</div>
-            <div class="cliente-card-nome">{d.get("razao") or "— Razão social não informada —"}</div>
-            <div class="cliente-card-linha">📍 {endereco}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-# =====================================================
 # ESTILOS (CSS)
 # =====================================================
 st.markdown("""
@@ -1036,12 +928,12 @@ div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stLi
 }
 
 div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stDownloadButton"] > button {
-    background: #7b9bff !important;
+    background: var(--zionne-gold) !important;
     color: white !important;
 }
 
 div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stDownloadButton"] > button:hover {
-    background: #6b8df2 !important;
+    background: #b4914f !important;
 }
 
 div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stLinkButton"] a {
@@ -1146,26 +1038,145 @@ div[data-baseweb="tab"] > button {
 }
 
 div[data-baseweb="tab"] > button:hover {
-    background-color: rgba(255, 75, 75, 0.08);
+    background-color: rgba(31, 122, 58, 0.08);
 }
 
 div[data-baseweb="tab"] > button[aria-selected="true"] {
     font-weight: 900;
-    background-color: rgba(255, 75, 75, 0.15);
-    border-bottom: none;
-    box-shadow: 0 4px 10px rgba(255, 75, 75, 0.25);
+    color: var(--zionne-green-900) !important;
+    background-color: rgba(201, 163, 93, 0.18);
+    border-bottom: 3px solid var(--zionne-gold) !important;
+    box-shadow: 0 4px 10px rgba(201, 163, 93, 0.25);
+}
+
+/* Esconde a barra de ferramentas padrão do Streamlit (menu Deploy/hambúrguer),
+   que colidia visualmente com as abas do app. */
+[data-testid="stToolbar"],
+#MainMenu,
+footer {
+    visibility: hidden !important;
+    height: 0 !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(
-    ["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"]
+tab_cliente, tab_produtos, tab_carrinho, tab_final = st.tabs(
+    ["🏢 CLIENTE", "📦 PRODUTOS", "🧾 CARRINHO", "⚙️ FINALIZAÇÃO"]
 )
+
+# =====================================================
+# ABA CLIENTE
+# =====================================================
+with tab_cliente:
+    client_card = st.container(border=True)
+    with client_card:
+        st.markdown(
+            "<h1 style='font-size:25px;'>🏢 Dados do Cliente</h1>",
+            unsafe_allow_html=True,
+        )
+        col_cnpj, col_btn = st.columns([3, 1])
+        with col_cnpj:
+            cnpj = st.text_input("CNPJ *", placeholder="00.000.000/0000-00", key=f"cnpj_{rc}")
+        with col_btn:
+            st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+            consultar = st.button("Consultar CNPJ", type="primary", use_container_width=True)
+
+        telefone = st.text_input("📞 WhatsApp *", placeholder="(00) 00000-0000", key=f"tel_{rc}")
+        email = st.text_input("✉️ E-mail *", placeholder="email@exemplo.com", key=f"email_{rc}")
+        ie = st.text_input("🧾 Inscrição Estadual *", placeholder="000.000.000.000", key=f"ie_{rc}")
+        telefone_zionne = st.text_input(
+            "📞 Telefone WhatsApp Zionne", placeholder="(00) 00000-0000", key=f"tel_zionne_{rc}"
+        )
+
+        if consultar:
+            dados, erro = consulta_cnpj(cnpj)
+            if erro:
+                st.error(erro)
+                st.warning("CNPJ não encontrado. Insira os dados manualmente abaixo.")
+                st.session_state.dados_cliente = None
+            else:
+                st.session_state.dados_cliente = dados
+                st.success("Cliente localizado!")
+
+    # Campos para entrada manual (sempre visíveis se a consulta não retornou dados)
+    if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True) or st.session_state.dados_cliente is None:
+        st.markdown(
+            "<h1 style='font-size:20px;'>📝 Inserir Dados Manualmente</h1>",
+            unsafe_allow_html=True,
+        )
+
+        cliente_atual = st.session_state.dados_cliente or {}
+        razao_manual = st.text_input(
+            "🏢 Razão Social", placeholder="Razão Social",
+            value=cliente_atual.get("razao", ""), key=f"razao_manual_{rc}",
+        )
+        logradouro_manual = st.text_input(
+            "📍 Logradouro", placeholder="Rua, Avenida...",
+            value=cliente_atual.get("logradouro", ""), key=f"logradouro_manual_{rc}",
+        )
+        numero_manual = st.text_input(
+            "🔢 Número", placeholder="Número",
+            value=cliente_atual.get("numero", ""), key=f"numero_manual_{rc}",
+        )
+        bairro_manual = st.text_input(
+            "🏘️ Bairro", placeholder="Bairro",
+            value=cliente_atual.get("bairro", ""), key=f"bairro_manual_{rc}",
+        )
+        municipio_manual = st.text_input(
+            "🏙️ Município", placeholder="Cidade",
+            value=cliente_atual.get("municipio", ""), key=f"municipio_manual_{rc}",
+        )
+        uf_manual = st.selectbox(
+            "UF", UFS,
+            index=UFS.index(cliente_atual.get("uf", "SP")) if cliente_atual.get("uf") in UFS else UFS.index("SP"),
+            key=f"uf_manual_{rc}",
+        )
+        cep_manual = st.text_input(
+            "🏷️ CEP", placeholder="00000-000",
+            value=cliente_atual.get("cep", ""), key=f"cep_manual_{rc}",
+        )
+
+        if st.button("Salvar Dados Manuais", type="primary", use_container_width=True):
+            if razao_manual and logradouro_manual and municipio_manual:
+                st.session_state.dados_cliente = {
+                    "razao": razao_manual,
+                    "logradouro": logradouro_manual,
+                    "numero": numero_manual,
+                    "bairro": bairro_manual,
+                    "municipio": municipio_manual,
+                    "uf": uf_manual,
+                    "cep": cep_manual,
+                }
+                st.success("Dados do cliente salvos manualmente!")
+            else:
+                st.error("Preencha pelo menos Razão Social, Logradouro e Município.")
+
+    # Exibe os dados (seja da consulta ou manual) em um cartão bem visível
+    if st.session_state.dados_cliente:
+        d = st.session_state.dados_cliente
+        endereco = f'{d["logradouro"]}, {d["numero"]} - {d["bairro"]} | {d["municipio"]}/{d["uf"]} - CEP {d["cep"]}'
+
+        if not d.get("razao"):
+            st.warning(
+                "O CNPJ foi consultado, mas a razão social veio vazia na resposta da API. "
+                "Confira os dados abaixo e complete manualmente se necessário."
+            )
+
+        st.markdown(
+            f"""
+            <div class="cliente-card">
+                <div class="cliente-card-badge">✅ CLIENTE IDENTIFICADO</div>
+                <div class="cliente-card-nome">{d.get("razao") or "— Razão social não informada —"}</div>
+                <div class="cliente-card-linha">📍 {endereco}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 # =====================================================
 # ABA PRODUTOS
 # =====================================================
-with tab1:
+with tab_produtos:
     st.markdown("### 📦 PRODUTOS")
 
     busca_key = f"busca_{rc}"
@@ -1317,7 +1328,7 @@ with tab1:
 # =====================================================
 # ABA CARRINHO
 # =====================================================
-with tab2:
+with tab_carrinho:
     st.markdown("### 🧾 CARRINHO")
 
     if st.session_state.carrinho and st.session_state.dados_cliente:
@@ -1389,7 +1400,7 @@ with tab2:
 # =====================================================
 # ABA FINALIZAÇÃO
 # =====================================================
-with tab3:
+with tab_final:
     st.header("⚙️ FINALIZAÇÃO")
 
     if not st.session_state.carrinho or not st.session_state.dados_cliente:
