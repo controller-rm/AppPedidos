@@ -1,0 +1,11 @@
+# Trava o tema do app em modo claro, independente do sistema/navegador do usuário.
+# Isso resolve botões/campos que ficavam escuros/ilegíveis quando o dispositivo
+# estava em "modo escuro": sem isso, o Streamlit deixa alguns componentes nativos
+# (inputs, selects, popovers) seguirem a preferência do sistema.
+[theme]
+base = "light"
+primaryColor = "#1f7a3a"
+backgroundColor = "#f6f4ef"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#1f2937"
+font = "sans serif"
