@@ -1,83 +1,158 @@
-import streamlit as st
+"""
+Sistema de Pedidos - Zionne (Feira ABUP)
+=========================================
+
+Aplicativo Streamlit para montagem de pedidos em feira: consulta de CNPJ,
+catálogo de produtos com busca/scanner de QR Code, carrinho editável e
+finalização com geração de CSV, PDF e envio via WhatsApp.
+
+Para rodar:
+    pip install -r requirements.txt
+    streamlit run AppPedidos.py
+"""
+
+import re
+import time
+from datetime import datetime
+from io import StringIO
+from urllib.parse import quote
+
 import pandas as pd
 import requests
-import re
-from io import StringIO, BytesIO
-from urllib.parse import quote
-from datetime import datetime
-from fpdf import FPDF  # Adicione esta linha para gerar PDFs (instale com pip install fpdf)
+import streamlit as st
+from fpdf import FPDF
+from streamlit_qrcode_scanner import qrcode_scanner
+
+# =====================================================
+# CONFIGURAÇÕES GERAIS
+# (ajuste aqui os dados institucionais, sem tocar na lógica do app)
+# =====================================================
+EMPRESA = {
+    "nome": "Zionne",
+    "evento": "PEDIDO DE VENDA - FEIRA ABUP SHOW HOME - 2-5 FEVEREIRO/2026",
+    "instagram": "@zionne.oficial",
+    "telefone": "(41) 3043-0595",
+    "site": "zionne.com.br",
+    "email": "comercial@zionne.com",
+    "endereco": "R. Gen. Mário Tourinho, 2465 - Curitiba - PR",
+}
+
+CNPJ_API_URL = "https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
+
+UFS = [
+    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
+    "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
+    "SP", "SE", "TO",
+]
+
+CONDICOES_PAGAMENTO = [
+    "À Vista - PIX",
+    "30% Adto + 30 dias",
+    "30% Adto + 30/60",
+    "30% Adto + 30/60/90",
+    "Outro",
+]
+
+TIPOS_FRETE = ["FOB - Por conta do cliente", "CIF", "FOB + CIF"]
 
 st.set_page_config(page_title="Sistema de Pedidos", layout="wide")
-st.markdown(
-    "<h1 style='font-size:25px;'>🛒 Bloco de Pedido - Zionne</h1>",
-    unsafe_allow_html=True
-)
-
-# ==============================
-# NOVO PEDIDO (RESET REAL)
-# ==============================
-if st.button("🆕 Novo Pedido", type="primary", use_container_width=True):
-
-    rc = st.session_state.get("reset_counter", 0) + 1  # guarda próximo número
-    st.session_state.clear()  # limpa tudo
-    st.session_state.reset_counter = rc  # restaura contador
-    st.rerun()
 
 
 # =====================================================
-# ESTADOS
+# ESTADO DA SESSÃO
 # =====================================================
-if "carrinho" not in st.session_state:
-    st.session_state.carrinho = []
+def inicializar_estado() -> None:
+    """Garante que todas as chaves de sessão usadas pelo app existam."""
+    valores_padrao = {
+        "carrinho": [],
+        "dados_cliente": None,
+        "reset_counter": 0,
+        "camera_on": False,
+        "last_qr": None,
+        "last_scan_time": 0.0,
+        "scan_value": "",
+        "pedido_gerado": None,
+    }
+    for chave, valor in valores_padrao.items():
+        if chave not in st.session_state:
+            st.session_state[chave] = valor
 
-if "dados_cliente" not in st.session_state:
-    st.session_state.dados_cliente = None
-# Adicione:
-if "reset_counter" not in st.session_state:
-    st.session_state.reset_counter = 0
+
+def iniciar_novo_pedido() -> None:
+    """Limpa o pedido atual, mas preserva um contador crescente.
+
+    O contador é usado como sufixo nas chaves dos widgets (ex.: `cnpj_{rc}`)
+    para forçar o Streamlit a recriá-los em branco após o reset.
+    """
+    proximo_contador = st.session_state.get("reset_counter", 0) + 1
+    st.session_state.clear()
+    st.session_state.reset_counter = proximo_contador
+    inicializar_estado()
+
+
+inicializar_estado()
+
+
+# =====================================================
+# VALIDAÇÕES SIMPLES
+# =====================================================
+def email_valido(email: str) -> bool:
+    return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", (email or "").strip()))
+
+
+def somente_digitos(texto: str) -> str:
+    return re.sub(r"\D", "", texto or "")
+
+
 # =====================================================
 # FUNÇÃO CONSULTA CNPJ
 # =====================================================
-def consulta_cnpj(cnpj):
-    cnpj = re.sub(r"\D", "", cnpj)
-    if len(cnpj) != 14:
-        return None, "CNPJ inválido"
+def consulta_cnpj(cnpj: str):
+    """Consulta um CNPJ na BrasilAPI.
+
+    Retorna uma tupla (dados, erro): quando a consulta falha, `dados` é
+    None e `erro` traz uma mensagem amigável para exibir ao usuário.
+    """
+    cnpj_limpo = somente_digitos(cnpj)
+    if len(cnpj_limpo) != 14:
+        return None, "CNPJ inválido. Verifique o número informado."
 
     try:
-        response = requests.get(f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}", timeout=10)
-        if response.status_code != 200:
-            return None, "CNPJ não encontrado"
+        resposta = requests.get(CNPJ_API_URL.format(cnpj=cnpj_limpo), timeout=10)
+    except requests.exceptions.RequestException:
+        return None, "Não foi possível conectar ao serviço de consulta de CNPJ."
 
-        d = response.json()
-        return {
-            "razao": d.get("razao_social", ""),
-            "logradouro": d.get("logradouro", ""),
-            "numero": d.get("numero", ""),
-            "bairro": d.get("bairro", ""),
-            "municipio": d.get("municipio", ""),
-            "uf": d.get("uf", ""),
-            "cep": d.get("cep", "")
-        }, None
-    except:
-        return None, "Erro na consulta do CNPJ"
-    
+    if resposta.status_code == 404:
+        return None, "CNPJ não encontrado."
+    if resposta.status_code != 200:
+        return None, f"Erro ao consultar CNPJ (HTTP {resposta.status_code})."
+
+    d = resposta.json()
+    return {
+        "razao": d.get("razao_social", ""),
+        "logradouro": d.get("logradouro", ""),
+        "numero": d.get("numero", ""),
+        "bairro": d.get("bairro", ""),
+        "municipio": d.get("municipio", ""),
+        "uf": d.get("uf", ""),
+        "cep": d.get("cep", ""),
+    }, None
+
+
 def normaliza_codigo_qr(qr):
+    """Normaliza o texto lido do QR Code para o formato de SKU (7 dígitos)."""
     if qr is None:
         return None
+    apenas_numeros = re.sub(r"\D", "", str(qr).strip())
+    return apenas_numeros.zfill(7) if apenas_numeros else None
 
-    # remove espaços e quebras de linha
-    qr = str(qr).strip()
 
-    # mantém apenas números
-    qr = re.sub(r"\D", "", qr)
-
-    # completa com zeros à esquerda (7 dígitos)
-    return qr.zfill(7)
-
- # =====================================================
-# PRODUTOS - BASE COMPLETA
 # =====================================================
-dados_produtos = """
+# PRODUTOS - BASE COMPLETA
+# Fonte: tabela de preços da feira ABUP 2026.
+# Formato de cada linha: codigo ; descrição ; preço (padrão BR, ex.: 308,90)
+# =====================================================
+_DADOS_PRODUTOS_BRUTOS = """
 0000001	;	 BULE COM INFUSOR - HORTICOOL GREEN 500ML 	;	308,9
 0000002	;	 BULE COM INFUSOR - HORTICOOL GREEN 1000M 	;	401,58
 0000003	;	 ACUCAREIRO HORTICOOL GREEN 150ML       	;	142,94
@@ -250,37 +325,252 @@ dados_produtos = """
 
 """
 
-df_produtos = pd.read_csv(
-    pd.io.common.StringIO(dados_produtos),
-    sep=";",
-    names=["codigo", "descricao", "preco"],
-    dtype=str  # 🔥 FORÇA TEXTO
+
+@st.cache_data
+def carregar_produtos(dados_csv: str) -> pd.DataFrame:
+    """Faz o parse do catálogo (texto ;-separado) para um DataFrame tipado.
+
+    Fica com @st.cache_data porque o texto é sempre o mesmo durante a
+    execução do app: evita reprocessar o catálogo a cada interação do usuário.
+    """
+    df = pd.read_csv(
+        StringIO(dados_csv),
+        sep=";",
+        names=["codigo", "descricao", "preco"],
+        dtype=str,
+    )
+    df["preco"] = (
+        df["preco"]
+        .str.replace(".", "", regex=False)
+        .str.replace(",", ".", regex=False)
+        .astype(float)
+    )
+    df["codigo"] = df["codigo"].astype(str).str.strip()
+    df["descricao"] = df["descricao"].astype(str).str.strip()
+    return df
+
+
+df_produtos = carregar_produtos(_DADOS_PRODUTOS_BRUTOS)
+
+
+# =====================================================
+# GERAÇÃO DE PDF
+# =====================================================
+class PedidoPDF(FPDF):
+    def footer(self):
+        self.set_y(-20)
+        self.set_font("Arial", "", 8)
+        self.cell(0, 4, f"Instagram: {EMPRESA['instagram']}", 0, 1, "C")
+        self.cell(0, 4, f"Telefone / WhatsApp: {EMPRESA['telefone']}", 0, 1, "C")
+        self.cell(0, 4, f"Site: {EMPRESA['site']} | E-mail: {EMPRESA['email']}", 0, 1, "C")
+        self.cell(0, 4, EMPRESA["endereco"], 0, 0, "C")
+
+
+def gerar_pdf(dados_cliente, carrinho, total, cond_pag, frete, obs, cnpj, telefone, email, ie) -> bytes:
+    pdf = PedidoPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=25)
+
+    # ================= CABEÇALHO =================
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 8, EMPRESA["evento"], 0, 1, "C")
+    pdf.ln(2)
+
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(0, 6, "DADOS DO CLIENTE", 0, 1)
+    pdf.set_font("Arial", "", 10)
+    pdf.multi_cell(0, 5, f"Razão Social: {dados_cliente['razao']}")
+    pdf.multi_cell(0, 5, f"CNPJ: {cnpj}   IE: {ie}")
+    pdf.multi_cell(0, 5, f"Telefone: {telefone}   E-mail: {email}")
+    pdf.multi_cell(
+        0, 5,
+        f"Endereço: {dados_cliente['logradouro']}, {dados_cliente['numero']} - "
+        f"{dados_cliente['bairro']} - {dados_cliente['municipio']}/{dados_cliente['uf']} "
+        f"- CEP {dados_cliente['cep']}",
+    )
+    pdf.ln(2)
+
+    # ================= ITENS =================
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(20, 6, "Código", 1)
+    pdf.cell(95, 6, "Descrição", 1)
+    pdf.cell(15, 6, "Qtd", 1, 0, "C")
+    pdf.cell(25, 6, "Unit.", 1, 0, "R")
+    pdf.cell(25, 6, "Total", 1, 1, "R")
+
+    pdf.set_font("Arial", "", 9)
+    for item in carrinho:
+        pdf.cell(20, 6, str(item["codigo"]), 1)
+        pdf.cell(95, 6, str(item["descricao"])[:55], 1)
+        pdf.cell(15, 6, str(item["qtd"]), 1, 0, "C")
+        pdf.cell(25, 6, f"{item['preco']:.2f}", 1, 0, "R")
+        pdf.cell(25, 6, f"{item['total']:.2f}", 1, 1, "R")
+
+    pdf.ln(2)
+
+    # ================= TOTAIS =================
+    subtotal = total
+    pdf.set_font("Arial", "", 9)
+
+    pdf.cell(140, 6, "")
+    pdf.cell(25, 6, "Subtotal:", 1)
+    pdf.cell(25, 6, f"{subtotal:.2f}", 1, 1, "R")
+
+    pdf.cell(140, 6, "")
+    pdf.cell(25, 6, "Frete:", 1)
+    pdf.cell(25, 6, "0,00", 1, 1, "R")
+
+    pdf.cell(140, 6, "")
+    pdf.cell(25, 6, "Outras Desp.:", 1)
+    pdf.cell(25, 6, "0,00", 1, 1, "R")
+
+    pdf.cell(140, 6, "")
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(25, 6, "TOTAL:", 1)
+    pdf.cell(25, 6, f"{total:.2f}", 1, 1, "R")
+
+    pdf.ln(4)
+
+    # ================= PAGAMENTO / OBS =================
+    pdf.set_font("Arial", "", 9)
+    pdf.multi_cell(0, 5, f"Condição de Pagamento: {cond_pag}")
+    pdf.ln(2)
+
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 6, "INFORMAÇÕES DE ENTREGA", 0, 1)
+
+    pdf.set_font("Arial", "", 9)
+    pdf.multi_cell(0, 5, f"Tipo de Frete: {frete}")
+    pdf.multi_cell(0, 5, f"Observações: {obs}")
+
+    return pdf.output(dest="S").encode("latin1")
+
+
+# =====================================================
+# CSV E MENSAGENS DE WHATSAPP
+# =====================================================
+def montar_csv_pedido(dados_cliente, cnpj, cond_pag, frete, total, df_carrinho) -> str:
+    buffer = StringIO()
+    buffer.write(f"CLIENTE;{dados_cliente['razao']}\n")
+    buffer.write(f"CNPJ;{cnpj}\n")
+    buffer.write(f"COND_PAG;{cond_pag}\n")
+    buffer.write(f"TIPO_FRETE;{frete}\n")
+    buffer.write(f"TOTAL_PEDIDO;{total:.2f}\n")
+    buffer.write("\nITENS\n")
+    df_carrinho[["codigo", "descricao", "qtd", "preco", "total"]].to_csv(
+        buffer, sep=";", index=False
+    )
+    return buffer.getvalue()
+
+
+def montar_mensagem_pedido(
+    destino: str, d, cnpj, ie, telefone, email, frete, cond_pag, obs, carrinho, total
+) -> str:
+    """Monta o texto do pedido para WhatsApp.
+
+    destino: "cliente" (mensagem de confirmação, mais informal) ou
+             "zionne" (mensagem interna, mais objetiva).
+    """
+    obs_txt = obs if obs else "—"
+
+    if destino == "cliente":
+        itens_txt = "".join(
+            f"\n🔹 *{item['descricao']}*\n"
+            f"Cód: {item['codigo']}\n"
+            f"{item['qtd']} x R$ {item['preco']:.2f} = *R$ {item['total']:.2f}*\n"
+            for item in carrinho
+        )
+        return f"""🧾 *PEDIDO {EMPRESA['nome'].upper()} – FEIRA ABUP*
+
+━━━━━━━━━━━━━━━━━━
+👤 *DADOS DO CLIENTE*
+Razão Social: {d["razao"]}
+CNPJ: {cnpj}
+IE: {ie}
+Telefone: {telefone}
+E-mail: {email}
+
+📍 Endereço:
+{d["logradouro"]}, {d["numero"]} - {d["bairro"]}
+{d["municipio"]}/{d["uf"]} - CEP {d["cep"]}
+
+━━━━━━━━━━━━━━━━━━
+🚚 *FRETE:* {frete}
+💳 *PAGAMENTO:* {cond_pag}
+
+📝 *OBSERVAÇÕES*
+{obs_txt}
+
+━━━━━━━━━━━━━━━━━━
+📦 *ITENS DO PEDIDO*
+{itens_txt}
+━━━━━━━━━━━━━━━━━━
+💰 *TOTAL DO PEDIDO: R$ {total:.2f}*
+━━━━━━━━━━━━━━━━━━
+
+Obrigado por comprar com a *{EMPRESA['nome']}* 🤍
+"""
+
+    # destino == "zionne"
+    itens_txt = "".join(
+        f"\n• {item['codigo']} | {item['descricao']}"
+        f"\n  Qtde: {item['qtd']}  |  Unit: R$ {item['preco']:.2f}  |  Total: R$ {item['total']:.2f}\n"
+        for item in carrinho
+    )
+    return f"""📥 *NOVO PEDIDO – FEIRA ABUP*
+
+━━━━━━━━━━━━━━━━━━
+👤 CLIENTE: {d["razao"]}
+CNPJ: {cnpj}
+IE: {ie}
+TEL: {telefone}
+EMAIL: {email}
+
+📍 ENDEREÇO:
+{d["logradouro"]}, {d["numero"]} - {d["bairro"]}
+{d["municipio"]}/{d["uf"]} - CEP {d["cep"]}
+
+🚚 *FRETE:* {frete}
+💳 *PAGAMENTO:* {cond_pag}
+
+📝 OBS: {obs_txt}
+
+━━━━━━━━━━━━━━━━━━
+📦 PRODUTOS
+{itens_txt}
+━━━━━━━━━━━━━━━━━━
+💰 TOTAL PEDIDO: R$ {total:.2f}
+━━━━━━━━━━━━━━━━━━
+"""
+
+
+def calcular_total_pedido(carrinho: list) -> float:
+    return sum(item["total"] for item in carrinho) if carrinho else 0.0
+
+
+# =====================================================
+# CABEÇALHO / NOVO PEDIDO
+# =====================================================
+st.markdown(
+    "<h1 style='font-size:25px;'>🛒 Bloco de Pedido - Zionne</h1>",
+    unsafe_allow_html=True,
 )
 
-# Converter preço BR → float
-df_produtos["preco"] = (
-    df_produtos["preco"]
-    .str.replace(".", "", regex=False)
-    .str.replace(",", ".", regex=False)
-    .astype(float)
-)
+if st.button("🆕 Novo Pedido", type="primary", use_container_width=True):
+    iniciar_novo_pedido()
+    st.rerun()
 
-# Garantia extra (evita esse erro NUNCA MAIS)
-df_produtos["codigo"] = df_produtos["codigo"].astype(str)
-df_produtos["descricao"] = df_produtos["descricao"].astype(str)
-
+rc = st.session_state.reset_counter
 
 # =====================================================
 # DADOS CLIENTE
 # =====================================================
 client_card = st.container(border=True)
 with client_card:
-    #st.markdown("### 🏢 Dados do Cliente")
     st.markdown(
         "<h1 style='font-size:25px;'>🏢 Dados do Cliente</h1>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
-    rc = st.session_state.reset_counter
     col_cnpj, col_btn = st.columns([3, 1])
     with col_cnpj:
         cnpj = st.text_input("CNPJ *", placeholder="00.000.000/0000-00", key=f"cnpj_{rc}")
@@ -291,9 +581,10 @@ with client_card:
     telefone = st.text_input("📞 WhatsApp *", placeholder="(00) 00000-0000", key=f"tel_{rc}")
     email = st.text_input("✉️ E-mail *", placeholder="email@exemplo.com", key=f"email_{rc}")
     ie = st.text_input("🧾 Inscrição Estadual *", placeholder="000.000.000.000", key=f"ie_{rc}")
-    telefone_zionne = st.text_input("📞 Telefone WhatsApp Zionne", placeholder="(00) 00000-0000", key=f"tel_zionne_{rc}")
+    telefone_zionne = st.text_input(
+        "📞 Telefone WhatsApp Zionne", placeholder="(00) 00000-0000", key=f"tel_zionne_{rc}"
+    )
 
-    # Consulta CNPJ
     if consultar:
         dados, erro = consulta_cnpj(cnpj)
         if erro:
@@ -304,24 +595,44 @@ with client_card:
             st.session_state.dados_cliente = dados
             st.success("Cliente localizado!")
 
-# 🔥 NOVO: Campos para entrada manual (sempre visíveis, mas preenchidos se consulta funcionar)
+# Campos para entrada manual (sempre visíveis se a consulta não retornou dados)
 if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True) or st.session_state.dados_cliente is None:
-    #st.subheader("📝 Inserir Dados do Cliente Manualmente")
     st.markdown(
-    "<h1 style='font-size:20px;'>📝Inserir Dados Manualmente</h1>",
-    unsafe_allow_html=True
-)
-    
-    
-    razao_manual = st.text_input("🏢 Razão Social", placeholder="Razão Social", value=st.session_state.dados_cliente.get("razao", "") if st.session_state.dados_cliente else "", key=f"razao_manual_{rc}")
-    logradouro_manual = st.text_input("📍 Logradouro", placeholder="Rua, Avenida...", value=st.session_state.dados_cliente.get("logradouro", "") if st.session_state.dados_cliente else "", key=f"logradouro_manual_{rc}")
-    numero_manual = st.text_input("🔢 Número", placeholder="Número", value=st.session_state.dados_cliente.get("numero", "") if st.session_state.dados_cliente else "", key=f"numero_manual_{rc}")
-    bairro_manual = st.text_input("🏘️ Bairro", placeholder="Bairro", value=st.session_state.dados_cliente.get("bairro", "") if st.session_state.dados_cliente else "", key=f"bairro_manual_{rc}")
-    municipio_manual = st.text_input("🏙️ Município", placeholder="Cidade", value=st.session_state.dados_cliente.get("municipio", "") if st.session_state.dados_cliente else "", key=f"municipio_manual_{rc}")
-    uf_manual = st.selectbox("UF", ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"], 
-                             index=["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"].index(st.session_state.dados_cliente.get("uf", "SP")) if st.session_state.dados_cliente else 24, key=f"uf_manual_{rc}")
-    cep_manual = st.text_input("🏷️ CEP", placeholder="00000-000", value=st.session_state.dados_cliente.get("cep", "") if st.session_state.dados_cliente else "", key=f"cep_manual_{rc}")
-    
+        "<h1 style='font-size:20px;'>📝 Inserir Dados Manualmente</h1>",
+        unsafe_allow_html=True,
+    )
+
+    cliente_atual = st.session_state.dados_cliente or {}
+    razao_manual = st.text_input(
+        "🏢 Razão Social", placeholder="Razão Social",
+        value=cliente_atual.get("razao", ""), key=f"razao_manual_{rc}",
+    )
+    logradouro_manual = st.text_input(
+        "📍 Logradouro", placeholder="Rua, Avenida...",
+        value=cliente_atual.get("logradouro", ""), key=f"logradouro_manual_{rc}",
+    )
+    numero_manual = st.text_input(
+        "🔢 Número", placeholder="Número",
+        value=cliente_atual.get("numero", ""), key=f"numero_manual_{rc}",
+    )
+    bairro_manual = st.text_input(
+        "🏘️ Bairro", placeholder="Bairro",
+        value=cliente_atual.get("bairro", ""), key=f"bairro_manual_{rc}",
+    )
+    municipio_manual = st.text_input(
+        "🏙️ Município", placeholder="Cidade",
+        value=cliente_atual.get("municipio", ""), key=f"municipio_manual_{rc}",
+    )
+    uf_manual = st.selectbox(
+        "UF", UFS,
+        index=UFS.index(cliente_atual.get("uf", "SP")) if cliente_atual.get("uf") in UFS else UFS.index("SP"),
+        key=f"uf_manual_{rc}",
+    )
+    cep_manual = st.text_input(
+        "🏷️ CEP", placeholder="00000-000",
+        value=cliente_atual.get("cep", ""), key=f"cep_manual_{rc}",
+    )
+
     if st.button("Salvar Dados Manuais", type="primary", use_container_width=True):
         if razao_manual and logradouro_manual and municipio_manual:
             st.session_state.dados_cliente = {
@@ -331,7 +642,7 @@ if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=
                 "bairro": bairro_manual,
                 "municipio": municipio_manual,
                 "uf": uf_manual,
-                "cep": cep_manual
+                "cep": cep_manual,
             }
             st.success("Dados do cliente salvos manualmente!")
         else:
@@ -344,6 +655,9 @@ if st.session_state.dados_cliente:
     st.text_input("Razão Social", d["razao"], disabled=True)
     st.text_area("Endereço", endereco, disabled=True)
 
+# =====================================================
+# ESTILOS (CSS)
+# =====================================================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Source+Sans+3:wght@400;600;700&display=swap');
@@ -369,7 +683,6 @@ st.markdown("""
     --btn-whatsapp-hover: #5ab67d;
 }
 
-/* ===== BASE ===== */
 html, body, [data-testid="stAppViewContainer"] {
     background: radial-gradient(1200px 600px at 10% -10%, #ffffff 0%, var(--bg) 50%, #f0efe9 100%) !important;
 }
@@ -393,7 +706,6 @@ h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
     padding-bottom: 2.5rem;
 }
 
-/* ===== INPUTS ===== */
 .stTextInput input,
 .stTextArea textarea,
 .stNumberInput input,
@@ -413,7 +725,6 @@ h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
     box-shadow: 0 0 0 3px rgba(31, 122, 58, 0.18) !important;
 }
 
-/* ===== BUTTONS ===== */
 div[data-testid="stButton"] {
     width: 100% !important;
 }
@@ -449,7 +760,6 @@ button[kind="secondary"]:hover {
     background: var(--btn-danger-hover) !important;
 }
 
-/* ===== CARDS ===== */
 .card-produto {
     border: 1px solid var(--line);
     border-left: 6px solid var(--zionne-green);
@@ -460,7 +770,6 @@ button[kind="secondary"]:hover {
     box-shadow: var(--shadow);
 }
 
-/* ===== PRODUTOS GRID ===== */
 .card-inner {
     background: #f6f1e7;
     border-radius: 12px;
@@ -518,7 +827,6 @@ button[kind="secondary"]:hover {
     color: var(--ink);
 }
 
-/* ===== SEARCH ROW (PRODUTOS) ===== */
 .search-row-marker {
     display: none;
 }
@@ -535,7 +843,6 @@ div[data-testid="stVerticalBlock"]:has(.search-row-marker) div[data-testid="stBu
     padding: 6px 10px !important;
 }
 
-/* ===== ACTION ROW BUTTONS ===== */
 .action-row-marker {
     display: none;
 }
@@ -568,7 +875,6 @@ div[data-testid="stVerticalBlock"]:has(.action-row-marker) div[data-testid="stLi
     background: #57b571 !important;
 }
 
-/* ===== TABS ===== */
 div[data-testid="stTabs"] button {
     border-radius: 12px 12px 0 0 !important;
     font-weight: 700 !important;
@@ -579,7 +885,6 @@ div[data-testid="stTabs"] button[aria-selected="true"] {
     border-bottom: 3px solid var(--zionne-gold) !important;
 }
 
-/* ===== LINKS WHATSAPP ===== */
 div[data-testid="stLinkButton"] a {
     display: block !important;
     width: 100% !important;
@@ -605,7 +910,6 @@ div[data-testid="stLinkButton"] a:hover {
     background: linear-gradient(90deg, var(--btn-whatsapp-hover), #45b870) !important;
 }
 
-/* ===== SCROLL ÁREAS ===== */
 section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(div[data-testid="stMarkdownContainer"] h3:contains("PRODUTOS")) + div {
     height: calc(100vh - 200px);
     overflow-y: auto;
@@ -631,7 +935,6 @@ section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(di
     }
 }
 
-/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-thumb {
     background: #c1c1c1;
@@ -639,7 +942,6 @@ section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(di
 }
 ::-webkit-scrollbar-thumb:hover { background: #888; }
 
-/* ===== TOTAL FIXO ===== */
 .total-box {
     background: #ffffff;
     padding: 14px;
@@ -650,29 +952,6 @@ section[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:has(di
     z-index: 10;
     border: 1px solid var(--line);
 }
-</style>
-""", unsafe_allow_html=True)
-
-from streamlit_qrcode_scanner import qrcode_scanner
-import time
-
-# ============================
-# ESTADOS INICIAIS
-# ============================
-if "camera_on" not in st.session_state:
-    st.session_state.camera_on = False
-
-if "last_qr" not in st.session_state:
-    st.session_state.last_qr = None
-
-if "last_scan_time" not in st.session_state:
-    st.session_state.last_scan_time = 0
-
-if "scan_value" not in st.session_state:
-    st.session_state.scan_value = ""
-
-st.markdown("""
-<style>
 
 /* Container das abas */
 div[data-baseweb="tab-list"] {
@@ -680,7 +959,6 @@ div[data-baseweb="tab-list"] {
     padding-bottom: 6px;
 }
 
-/* Aba padrão */
 div[data-baseweb="tab"] > button {
     font-weight: 700;
     font-size: 16px;
@@ -689,19 +967,16 @@ div[data-baseweb="tab"] > button {
     transition: all 0.2s ease-in-out;
 }
 
-/* Hover */
 div[data-baseweb="tab"] > button:hover {
     background-color: rgba(255, 75, 75, 0.08);
 }
 
-/* Aba ativa */
 div[data-baseweb="tab"] > button[aria-selected="true"] {
     font-weight: 900;
     background-color: rgba(255, 75, 75, 0.15);
     border-bottom: none;
     box-shadow: 0 4px 10px rgba(255, 75, 75, 0.25);
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -709,42 +984,29 @@ tab1, tab2, tab3 = st.tabs(
     ["📦 PRODUTOS", "🧾 PEDIDOS-CARRINHO", "⚙️ FINALIZAÇÃO"]
 )
 
-
-
-# Mapa de produtos já adicionados
-carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
-
-# ============================
+# =====================================================
 # ABA PRODUTOS
-# ============================
+# =====================================================
 with tab1:
-
     st.markdown("### 📦 PRODUTOS")
 
     busca_key = f"busca_{rc}"
 
-    # 🔐 Injeção segura do valor escaneado (ANTES do widget)
+    # Injeção segura do valor escaneado (antes do widget ser criado)
     if st.session_state.scan_value:
         st.session_state[busca_key] = st.session_state.scan_value
         st.session_state.scan_value = ""
 
-    # Layout busca + botão QR
     st.markdown('<div class="search-row-marker"></div>', unsafe_allow_html=True)
     colBusca, colQR, top2 = st.columns([6, 1, 1])
 
-    # ============================
-    # CAMPO DE BUSCA
-    # ============================
     with colBusca:
         busca = st.text_input(
             "🔎 Buscar produto",
             placeholder="Buscar por SKU ou descrição...",
-            key=busca_key
+            key=busca_key,
         ) or ""
 
-    # ============================
-    # BOTÃO SCANNER
-    # ============================
     with colQR:
         if not st.session_state.camera_on:
             if st.button("📷 Scanner", type="primary", use_container_width=True):
@@ -753,9 +1015,6 @@ with tab1:
             if st.button("❌ Fechar", type="secondary", use_container_width=True):
                 st.session_state.camera_on = False
 
-    # ============================
-    # SCANNER ATIVO
-    # ============================
     if st.session_state.camera_on:
         st.caption("📷 Aponte a câmera para o QR Code")
 
@@ -763,20 +1022,16 @@ with tab1:
         qr_code = normaliza_codigo_qr(raw_qr)
 
         if qr_code:
-            now = time.time()
+            agora_ts = time.time()
 
-            # Evita leitura duplicada
+            # Evita leitura duplicada do mesmo código em sequência
             if (
                 qr_code != st.session_state.last_qr
-                or now - st.session_state.last_scan_time > 1
+                or agora_ts - st.session_state.last_scan_time > 1
             ):
                 st.session_state.last_qr = qr_code
-                st.session_state.last_scan_time = now
-
-                # 👉 Guarda valor para o próximo ciclo
+                st.session_state.last_scan_time = agora_ts
                 st.session_state.scan_value = qr_code
-
-                # Fecha câmera
                 st.session_state.camera_on = False
 
                 produto = df_produtos[df_produtos["codigo"] == qr_code]
@@ -786,10 +1041,7 @@ with tab1:
                     codigo = row["codigo"]
                     preco = row["preco"]
 
-                    carrinho_map = {
-                        item["codigo"]: item
-                        for item in st.session_state.carrinho
-                    }
+                    carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
 
                     if codigo in carrinho_map:
                         idx = next(
@@ -806,40 +1058,29 @@ with tab1:
                             "descricao": row["descricao"],
                             "qtd": 1,
                             "preco": preco,
-                            "total": preco
+                            "total": preco,
                         })
 
                     st.toast(f"✅ {codigo} adicionado ao pedido", icon="📦")
                     st.rerun()
-
                 else:
                     st.warning(f"⚠️ Produto {qr_code} não encontrado")
                     st.rerun()
 
-    # ============================
-    # FILTRO DE PRODUTOS
-    # ============================
     df_filtrado = df_produtos[
         df_produtos["descricao"].str.contains(busca, case=False, na=False)
-        | df_produtos["codigo"].astype(str).str.contains(busca, case=False, na=False)
+        | df_produtos["codigo"].str.contains(busca, case=False, na=False)
     ]
 
     with top2:
         st.markdown(
             f"<div style='margin-top:8px;font-size:14px'><b>{len(df_filtrado)}</b><br>itens</div>",
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
-    # 👇 CONTAINER DE PRODUTOS
     container_produtos = st.container()
-
     with container_produtos:
-
-        carrinho_map = {
-            item["codigo"]: item
-            for item in st.session_state.carrinho
-        }
-
+        carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
         produtos = df_filtrado.to_dict("records")
 
         for i in range(0, len(produtos), 3):
@@ -863,18 +1104,11 @@ with tab1:
                         st.markdown(f'<div class="product-price">R$ {preco:.2f}</div>', unsafe_allow_html=True)
 
                         qtd = st.number_input(
-                            "Qtd",
-                            value=1,
-                            min_value=1,
-                            step=1,
-                            key=f"qtd_{codigo}_{rc}"
+                            "Qtd", value=1, min_value=1, step=1, key=f"qtd_{codigo}_{rc}"
                         )
 
                         if st.button(
-                            "Adicionar ➕",
-                            key=f"add_{codigo}",
-                            type="primary",
-                            use_container_width=True
+                            "Adicionar ➕", key=f"add_{codigo}", type="primary", use_container_width=True
                         ):
                             if ja_no_carrinho:
                                 idx = next(
@@ -891,13 +1125,9 @@ with tab1:
                                     "descricao": row["descricao"],
                                     "qtd": qtd,
                                     "preco": preco,
-                                    "total": qtd * preco
+                                    "total": qtd * preco,
                                 })
-
-                            # 🔥 ADICIONE ESTAS DUAS LINHAS
-                            st.session_state.clear_search = True
                             st.rerun()
-
 
                         if ja_no_carrinho:
                             qtd_total = carrinho_map[codigo]["qtd"]
@@ -906,17 +1136,16 @@ with tab1:
 
                         st.markdown("</div>", unsafe_allow_html=True)
 
-
+# =====================================================
+# ABA CARRINHO
+# =====================================================
 with tab2:
-
     st.markdown("### 🧾 CARRINHO")
 
     if st.session_state.carrinho and st.session_state.dados_cliente:
+        total_pedido = calcular_total_pedido(st.session_state.carrinho)
 
-        df_carrinho = pd.DataFrame(st.session_state.carrinho)
-        total_pedido = df_carrinho["total"].sum() if not df_carrinho.empty else 0
-
-        top1, top2 = st.columns([4,1])
+        top1, top2 = st.columns([4, 1])
         with top1:
             st.caption("Itens adicionados")
         with top2:
@@ -926,12 +1155,10 @@ with tab2:
                 f"<div style='font-size:16px;color:#6b7280;margin-top:4px'>"
                 f"Total: R$ {total_pedido:,.2f}"
                 f"</div></div>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
         container_carrinho = st.container()
-        # container_carrinho.markdown('<div class="scroll-carrinho"></div>', unsafe_allow_html=True)
-
         with container_carrinho:
 
             def atualizar_item(idx, key_qtd, preco):
@@ -943,7 +1170,6 @@ with tab2:
                 del st.session_state.carrinho[idx]
 
             for i, item in enumerate(st.session_state.carrinho):
-
                 card = st.container(border=True)
                 with card:
                     st.markdown('<div class="card-inner">', unsafe_allow_html=True)
@@ -952,57 +1178,39 @@ with tab2:
                     st.markdown(f'<div class="product-price">R$ {item["preco"]:.2f}</div>', unsafe_allow_html=True)
                     st.markdown(
                         f'<div class="product-status">Total do item: <b>R$ {item["total"]:.2f}</b></div>',
-                        unsafe_allow_html=True
+                        unsafe_allow_html=True,
                     )
 
                     st.markdown('<div class="product-actions">', unsafe_allow_html=True)
-                    key_qtd = f"edit_qtd_{i}_{st.session_state.reset_counter}"
-                    st.number_input(
-                        "Qtd",
-                        value=item["qtd"],
-                        min_value=1,
-                        step=1,
-                        key=key_qtd
-                    )
+                    key_qtd = f"edit_qtd_{i}_{rc}"
+                    st.number_input("Qtd", value=item["qtd"], min_value=1, step=1, key=key_qtd)
 
                     st.button(
-                        "Atualizar 🔄",
-                        key=f"update_{i}",
-                        type="primary",
-                        use_container_width=True,
-                        on_click=atualizar_item,
-                        args=(i, key_qtd, item["preco"])
+                        "Atualizar 🔄", key=f"update_{i}", type="primary", use_container_width=True,
+                        on_click=atualizar_item, args=(i, key_qtd, item["preco"]),
                     )
-
                     st.button(
-                        "Remover 🗑️",
-                        key=f"remove_{i}",
-                        type="secondary",
-                        use_container_width=True,
-                        on_click=remover_item,
-                        args=(i,)
+                        "Remover 🗑️", key=f"remove_{i}", type="secondary", use_container_width=True,
+                        on_click=remover_item, args=(i,),
                     )
 
                     st.markdown("</div>", unsafe_allow_html=True)
                     st.markdown(
                         f'<div class="product-status">✅ No Pedido: <b>{item["qtd"]} unidades</b></div>',
-                        unsafe_allow_html=True
+                        unsafe_allow_html=True,
                     )
                     st.markdown("</div>", unsafe_allow_html=True)
 
-        # TOTAL FIXO FORA DO SCROLL
-
         st.markdown(
-            f"<div class='total-box'><h3>💰 TOTAL: R$ {total_pedido:,.2f}</h3>",
-            unsafe_allow_html=True
+            f"<div class='total-box'><h3>💰 TOTAL: R$ {total_pedido:,.2f}</h3></div>",
+            unsafe_allow_html=True,
         )
-
-
     else:
         st.info("Nenhum produto adicionado ao pedido ainda.")
 
-
-
+# =====================================================
+# ABA FINALIZAÇÃO
+# =====================================================
 with tab3:
     st.header("⚙️ FINALIZAÇÃO")
 
@@ -1010,339 +1218,93 @@ with tab3:
         st.info("É necessário cliente e produtos para finalizar.")
         st.stop()
 
-    # 🔥 CRIA AQUI (resolve o erro)
     df_carrinho = pd.DataFrame(st.session_state.carrinho)
-    total_pedido = df_carrinho["total"].sum()
-    condicao_pagamento = st.session_state.get("cond_pag", "")
-    tipo_Frete = st.session_state.get("frete", "")
-    observacoes = st.session_state.get("obs_pedido", "")
+    total_pedido = calcular_total_pedido(st.session_state.carrinho)
 
-    # =========================
-    # CAMPOS DA FINALIZAÇÃO
-    # =========================
-    condicao_pagamento = st.selectbox(
-        "Condição de Pagamento",
-        ["À Vista - PIX", "30% Adto + 30 dias", "30% Adto + 30/60", "30% Adto + 30/60/90", "Outro"],
-        key="cond_pag"
-    )
+    condicao_pagamento = st.selectbox("Condição de Pagamento", CONDICOES_PAGAMENTO, key="cond_pag")
+    tipo_frete = st.selectbox("Tipo Frete", TIPOS_FRETE, key="frete")
+    observacoes = st.text_area("Observações do Pedido", key="obs_pedido")
 
-    tipo_Frete = st.selectbox(
-        "Tipo Frete",
-        ["FOB - Por conta do cliente", "CIF", "FOB + CIF"],
-        key="frete"
-    )
-    observacoes = st.text_area(
-        "Observações do Pedido",
-        key="obs_pedido"
-    )
+    if st.button("✅ Gerar Pedido (CSV / PDF / WhatsApp)", type="primary", use_container_width=True):
+        campos_faltando = []
+        if not cnpj:
+            campos_faltando.append("CNPJ")
+        if not telefone:
+            campos_faltando.append("Telefone do cliente")
+        if email and not email_valido(email):
+            st.error("O e-mail informado parece inválido. Confira antes de continuar.")
+        elif campos_faltando:
+            st.error(f"Preencha os campos obrigatórios: {', '.join(campos_faltando)}.")
+        else:
+            d = st.session_state.dados_cliente
+            timestamp = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 
-    # CSV com colunas Código;descrição,qtde,preco e nome CNPJ-data
-    agora = datetime.now()
-    timestamp = agora.strftime("%d-%m-%Y_%H-%M-%S")
+            csv_content = montar_csv_pedido(d, cnpj, condicao_pagamento, tipo_frete, total_pedido, df_carrinho)
+            pdf_bytes = gerar_pdf(
+                d, st.session_state.carrinho, total_pedido, condicao_pagamento,
+                tipo_frete, observacoes, cnpj, telefone, email, ie,
+            )
 
-    nome_csv = f"PEDIDO_ZIONNE_{cnpj}_{timestamp}.csv"
-    csv_buffer = StringIO()
+            mensagem_cliente = montar_mensagem_pedido(
+                "cliente", d, cnpj, ie, telefone, email, tipo_frete,
+                condicao_pagamento, observacoes, st.session_state.carrinho, total_pedido,
+            )
+            mensagem_zionne = montar_mensagem_pedido(
+                "zionne", d, cnpj, ie, telefone, email, tipo_frete,
+                condicao_pagamento, observacoes, st.session_state.carrinho, total_pedido,
+            ) + f"\n📎 CSV:\n{csv_content}"
 
-    # Cabeçalho do pedido
-    csv_buffer.write(f"CLIENTE;{st.session_state.dados_cliente['razao']}\n")
-    csv_buffer.write(f"CNPJ;{cnpj}\n")
-    csv_buffer.write(f"COND_PAG;{condicao_pagamento}\n")
-    csv_buffer.write(f"TIPO_FRETE;{tipo_Frete}\n")
-    csv_buffer.write(f"TOTAL_PEDIDO;{total_pedido:.2f}\n")
-    csv_buffer.write("\nITENS\n")
+            st.session_state.pedido_gerado = {
+                "csv_content": csv_content,
+                "csv_nome": f"PEDIDO_ZIONNE_{cnpj}_{timestamp}.csv",
+                "pdf_bytes": pdf_bytes,
+                "pdf_nome": f"PEDIDO_ZIONNE_{cnpj}_{timestamp}.pdf",
+                "mensagem_cliente": mensagem_cliente,
+                "mensagem_zionne": mensagem_zionne,
+                "telefone_cliente": telefone,
+                "telefone_zionne": telefone_zionne,
+            }
+            st.success("Pedido gerado com sucesso! Veja as opções abaixo.")
 
-    df_carrinho[["codigo", "descricao", "qtd", "preco", "total"]].to_csv(
-        csv_buffer, sep=";", index=False
-    )
+    if st.session_state.pedido_gerado:
+        pedido = st.session_state.pedido_gerado
 
-    csv_content = csv_buffer.getvalue()
+        action_row = st.container()
+        with action_row:
+            st.markdown('<div class="action-row-marker"></div>', unsafe_allow_html=True)
+            c_csv, c_pdf = st.columns(2)
+            with c_csv:
+                st.download_button(
+                    "Gerar CSV", pedido["csv_content"], pedido["csv_nome"],
+                    mime="text/csv", use_container_width=True,
+                )
+            with c_pdf:
+                st.download_button(
+                    "Gerar PDF", pedido["pdf_bytes"], pedido["pdf_nome"],
+                    mime="application/pdf", use_container_width=True,
+                )
 
-    # Função para gerar PDF
-    # Função para gerar PDF
-    from fpdf import FPDF
-    from datetime import datetime
+        st.markdown("### 📲 Envio via WhatsApp")
 
-    # ================= CLASSE PDF PERSONALIZADA =================
-    class PedidoPDF(FPDF):
+        telefone_limpo = somente_digitos(pedido["telefone_cliente"])
+        telefone_zionne_limpo = somente_digitos(pedido["telefone_zionne"])
 
-        def footer(self):
-            self.set_y(-20)  # posição do rodapé
-            self.set_font("Arial", "", 8)
+        if telefone_limpo:
+            link_cliente = f"https://wa.me/55{telefone_limpo}?text={quote(pedido['mensagem_cliente'])}"
+            st.link_button("📲 Enviar Pedido para Cliente no WhatsApp", link_cliente)
+        else:
+            st.warning("Informe o telefone do cliente para envio via WhatsApp.")
 
-            self.cell(0, 4, "Instagram: @zionne.oficial", 0, 1, "C")
-            self.cell(0, 4, "Telefone / WhatsApp: (41) 3043-0595", 0, 1, "C")
-            self.cell(0, 4, "Site: zionne.com.br | E-mail: comercial@zionne.com", 0, 1, "C")
-            self.cell(0, 4, "R. Gen. Mário Tourinho, 2465 - Curitiba - PR", 0, 0, "C")
+        if telefone_zionne_limpo:
+            link_zionne = f"https://wa.me/55{telefone_zionne_limpo}?text={quote(pedido['mensagem_zionne'])}"
+            st.link_button("📲 Enviar Pedido para Zionne no WhatsApp", link_zionne)
+        else:
+            st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
 
-
-    # ================= FUNÇÃO GERAR PDF =================
-    def gerar_pdf(dados_cliente, carrinho, total, cond_pag, frete, obs, cnpj, telefone, email, ie):
-
-        pdf = PedidoPDF()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=25)
-
-        # ================= CABEÇALHO =================
-        pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 8, "PEDIDO DE VENDA - FEIRA ABUP SHOW HOME - 2-5 FEVEREIRO/2026", 0, 1, "C")
-
-        pdf.set_font("Arial", "", 9)
-        pdf.cell(0, 5, f"Emissão: {datetime.now().strftime('%d/%m/%Y %H:%M')}", 0, 1, "R")
-
-        pdf.ln(3)
-
-        # ================= DADOS DO CLIENTE =================
-        pdf.set_font("Arial", "B", 10)
-        pdf.cell(0, 6, "DADOS DO CLIENTE", 0, 1)
-
-        pdf.set_font("Arial", "", 9)
-
-        endereco = f"{dados_cliente['logradouro']}, {dados_cliente['numero']} - {dados_cliente['bairro']} - {dados_cliente['municipio']}/{dados_cliente['uf']} - CEP {dados_cliente['cep']}"
-
-        pdf.cell(0, 5, f"Cliente: {dados_cliente['razao']}", 0, 1)
-        pdf.cell(0, 5, f"CNPJ: {cnpj}    IE: {ie}", 0, 1)
-        pdf.cell(0, 5, f"Telefone: {telefone}    Email: {email}", 0, 1)
-        pdf.multi_cell(0, 5, f"Endereço: {endereco}")
-
-        pdf.ln(2)
-
-        # ================= INFORMAÇÕES COMERCIAIS =================
-        pdf.cell(0, 5, "Natureza da Operação: Venda de Produtos", 0, 1)
-        pdf.cell(0, 5, "Representante: Vendedor Interno", 0, 1)
-
-        pdf.ln(3)
-
-        # ================= TABELA PRODUTOS =================
-        pdf.set_font("Arial", "B", 9)
-        pdf.cell(10, 6, "Item", 1, 0, "C")
-        pdf.cell(20, 6, "Código", 1, 0, "C")
-        pdf.cell(90, 6, "Descrição", 1, 0, "C")
-        pdf.cell(15, 6, "Qtde", 1, 0, "C")
-        pdf.cell(20, 6, "Vlr Unit", 1, 0, "C")
-        pdf.cell(10, 6, "Desc.", 1, 0, "C")
-        pdf.cell(25, 6, "Vlr Total", 1, 1, "C")
-
-        pdf.set_font("Arial", "", 9)
-
-        subtotal = 0
-        for i, item in enumerate(carrinho, start=1):
-            pdf.cell(10, 6, str(i), 1, 0, "C")
-            pdf.cell(20, 6, item['codigo'], 1)
-            pdf.cell(90, 6, item['descricao'], 1)
-            pdf.cell(15, 6, f"{item['qtd']}", 1, 0, "C")
-            pdf.cell(20, 6, f"{item['preco']:.2f}", 1, 0, "R")
-            pdf.cell(10, 6, "0,00", 1, 0, "R")
-            pdf.cell(25, 6, f"{item['total']:.2f}", 1, 1, "R")
-            subtotal += item['total']
-
-        pdf.ln(3)
-
-        # ================= TOTAIS =================
-        pdf.set_font("Arial", "B", 10)
-        pdf.cell(0, 6, "TOTAIS", 0, 1)
-
-        pdf.set_font("Arial", "", 9)
-
-        pdf.cell(140, 6, "")
-        pdf.cell(25, 6, "Subtotal:", 1)
-        pdf.cell(25, 6, f"{subtotal:.2f}", 1, 1, "R")
-
-        pdf.cell(140, 6, "")
-        pdf.cell(25, 6, "Frete:", 1)
-        pdf.cell(25, 6, "0,00", 1, 1, "R")
-
-        pdf.cell(140, 6, "")
-        pdf.cell(25, 6, "Outras Desp.:", 1)
-        pdf.cell(25, 6, "0,00", 1, 1, "R")
-
-        pdf.cell(140, 6, "")
-        pdf.set_font("Arial", "B", 10)
-        pdf.cell(25, 6, "TOTAL:", 1)
-        pdf.cell(25, 6, f"{total:.2f}", 1, 1, "R")
-
-        pdf.ln(4)
-
-        # ================= PAGAMENTO / OBS =================
-        pdf.set_font("Arial", "", 9)
-        pdf.multi_cell(0, 5, f"Condição de Pagamento: {cond_pag}")
-        pdf.ln(2)
-
-        pdf.set_font("Arial", "B", 10)
-        pdf.cell(0, 6, "INFORMAÇÕES DE ENTREGA", 0, 1)
-
-        pdf.set_font("Arial", "", 9)
-        pdf.multi_cell(0, 5, f"Tipo de Frete: {frete}")
-
-        pdf.multi_cell(0, 5, f"Observações: {obs}")
-
-        return pdf.output(dest='S').encode('latin1')
-
-
-    # Gerar PDF
-    pdf_bytes = gerar_pdf(st.session_state.dados_cliente, st.session_state.carrinho, total_pedido, condicao_pagamento, tipo_Frete, observacoes, cnpj, telefone, email, ie)
-    agora = datetime.now()
-    timestamp = agora.strftime("%d-%m-%Y_%H-%M-%S")
-
-    nome_pdf = f"PEDIDO_ZIONNE_{cnpj}_{timestamp}.pdf"
-
-    # Ações em linha (CSV / PDF / WhatsApp Cliente)
-    telefone_limpo = re.sub(r'\D', '', telefone)
-    d = st.session_state.dados_cliente
-    mensagem_cliente_full = f"""🧾 *PEDIDO ZIONNE – FEIRA ABUP*
-
-━━━━━━━━━━━━━━━━━━
-👤 *DADOS DO CLIENTE*
-Razão Social: {d["razao"]}
-CNPJ: {cnpj}
-IE: {ie}
-Telefone: {telefone}
-E-mail: {email}
-
-📍 Endereço:
-{d["logradouro"]}, {d["numero"]} - {d["bairro"]}
-{d["municipio"]}/{d["uf"]} - CEP {d["cep"]}
-
-━━━━━━━━━━━━━━━━━━
-🚚 *FRETE:* {tipo_Frete}
-💳 *PAGAMENTO:* {condicao_pagamento}
-
-📝 *OBSERVAÇÕES*
-{observacoes if observacoes else "—"}
-
-━━━━━━━━━━━━━━━━━━
-📦 *ITENS DO PEDIDO*
-"""
-
-    for item in st.session_state.carrinho:
-        mensagem_cliente_full += (
-            f"\n🔹 *{item['descricao']}*\n"
-            f"Cód: {item['codigo']}\n"
-            f"{item['qtd']} x R$ {item['preco']:.2f} = *R$ {item['total']:.2f}*\n"
+        st.info(
+            "Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. "
+            "O CSV é enviado como texto na mensagem para Zionne."
         )
-
-    mensagem_cliente_full += f"""
-━━━━━━━━━━━━━━━━━━
-💰 *TOTAL DO PEDIDO: R$ {total_pedido:.2f}*
-━━━━━━━━━━━━━━━━━━
-
-Obrigado por comprar com a *Zionne* 🤍
-"""
-    action_row = st.container()
-    with action_row:
-        st.markdown('<div class="action-row-marker"></div>', unsafe_allow_html=True)
-        c_csv, c_pdf = st.columns(2)
-        with c_csv:
-            st.download_button("Gerar CSV", csv_content, nome_csv, mime="text/csv", use_container_width=True)
-        with c_pdf:
-            st.download_button("Gerar PDF", pdf_bytes, nome_pdf, mime="application/pdf", use_container_width=True)
-
-# =====================================================
-# WHATSAPP
-# =====================================================
-
-d = st.session_state.dados_cliente
-
-telefone_limpo = re.sub(r'\D', '', telefone)
-telefone_zionne_limpo = re.sub(r'\D', '', telefone_zionne)
-
-# ================= MENSAGEM CLIENTE =================
-mensagem_cliente = f"""🧾 *PEDIDO ZIONNE – FEIRA ABUP*
-
-━━━━━━━━━━━━━━━━━━
-👤 *DADOS DO CLIENTE*
-Razão Social: {d["razao"]}
-CNPJ: {cnpj}
-IE: {ie}
-Telefone: {telefone}
-E-mail: {email}
-
-📍 Endereço:
-{d["logradouro"]}, {d["numero"]} - {d["bairro"]}
-{d["municipio"]}/{d["uf"]} - CEP {d["cep"]}
-
-━━━━━━━━━━━━━━━━━━
-🚚 *FRETE:* {tipo_Frete}
-💳 *PAGAMENTO:* {condicao_pagamento}
-
-
-📝 *OBSERVAÇÕES*
-{observacoes if observacoes else "—"}
-
-━━━━━━━━━━━━━━━━━━
-📦 *ITENS DO PEDIDO*
-"""
-
-for item in st.session_state.carrinho:
-    mensagem_cliente += (
-        f"\n🔹 *{item['descricao']}*\n"
-        f"Cód: {item['codigo']}\n"
-        f"{item['qtd']} x R$ {item['preco']:.2f} = *R$ {item['total']:.2f}*\n"
-    )
-
-mensagem_cliente += f"""
-━━━━━━━━━━━━━━━━━━
-💰 *TOTAL DO PEDIDO: R$ {total_pedido:.2f}*
-━━━━━━━━━━━━━━━━━━
-
-Obrigado por comprar com a *Zionne* 🤍
-"""
-
-# ================= MENSAGEM INTERNA ZIONNE =================
-mensagem_zionne = f"""📥 *NOVO PEDIDO – FEIRA ABUP*
-
-━━━━━━━━━━━━━━━━━━
-👤 CLIENTE: {d["razao"]}
-CNPJ: {cnpj}
-IE: {ie}
-TEL: {telefone}
-EMAIL: {email}
-
-📍 ENDEREÇO:
-{d["logradouro"]}, {d["numero"]} - {d["bairro"]}
-{d["municipio"]}/{d["uf"]} - CEP {d["cep"]}
-
-🚚 *FRETE:* {tipo_Frete}
-💳 *PAGAMENTO:* {condicao_pagamento}
-
-📝 OBS: {observacoes if observacoes else "—"}
-
-━━━━━━━━━━━━━━━━━━
-📦 PRODUTOS
-"""
-
-for item in st.session_state.carrinho:
-    mensagem_zionne += (
-        f"\n• {item['codigo']} | {item['descricao']}"
-        f"\n  Qtde: {item['qtd']}  |  Unit: R$ {item['preco']:.2f}  |  Total: R$ {item['total']:.2f}\n"
-    )
-
-mensagem_zionne += f"""
-━━━━━━━━━━━━━━━━━━
-💰 TOTAL PEDIDO: R$ {total_pedido:.2f}
-━━━━━━━━━━━━━━━━━━
-
-📎 CSV:
-{csv_content}
-"""
-
-# ================= LINKS WHATSAPP =================
-if telefone_limpo:
-    link_cliente = f"https://wa.me/55{telefone_limpo}?text={quote(mensagem_cliente)}"
-    st.link_button("📲 Enviar Pedido para Cliente no WhatsApp", link_cliente)
-else:
-    st.warning("Informe o telefone do cliente para envio via WhatsApp.")
-
-if telefone_zionne_limpo:
-    link_zionne = f"https://wa.me/55{telefone_zionne_limpo}?text={quote(mensagem_zionne)}"
-    st.link_button("📲 Enviar Pedido para Zionne no WhatsApp", link_zionne)
-else:
-    st.warning("Informe o Telefone WhatsApp Zionne para enviar.")
-
-st.info("Para enviar o PDF como anexo, baixe o arquivo e anexe manualmente no WhatsApp. O CSV é enviado como texto na mensagem para Zionne.")
-
-
-
-
 
 
 
