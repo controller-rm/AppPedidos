@@ -1347,6 +1347,146 @@ button[kind="primary"]:hover {
     div[data-baseweb="tab-list"] { overflow-x:auto; flex-wrap:nowrap; padding-left:8px; padding-right:8px; }
     div[data-baseweb="tab"] { min-width:max-content; }
 }
+
+/* ===== Ajustes mobile profissionais - v2 ===== */
+.product-grid-row-marker, .product-controls-marker, .cart-controls-marker { display:none; }
+
+/* Cards realmente delimitados */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.product-grid-marker) {
+    border: 1.5px solid #ded4ba !important;
+    border-left: 6px solid #16833a !important;
+    border-radius: 15px !important;
+    background: linear-gradient(145deg,#fffefb 0%,#fbf5e7 100%) !important;
+    box-shadow: 0 5px 16px rgba(17,24,39,.08) !important;
+    overflow: hidden !important;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.list-row-marker) {
+    border: 1.5px solid #ded4ba !important;
+    border-left: 6px solid #16833a !important;
+    border-radius: 15px !important;
+    background: linear-gradient(145deg,#fffefb 0%,#fbf6e9 100%) !important;
+    box-shadow: 0 5px 16px rgba(17,24,39,.08) !important;
+    overflow: hidden !important;
+    margin-bottom: 10px !important;
+}
+
+.product-sku {
+    font-size: 13px !important;
+    padding: 5px 10px !important;
+    letter-spacing: .15px !important;
+    color: #1f2937 !important;
+}
+.product-title { font-size: 15.5px !important; line-height: 1.18 !important; }
+.product-price { font-size: 20px !important; }
+.stepper-value {
+    height: 40px !important;
+    min-height: 40px !important;
+    font-size: 19px !important;
+    font-weight: 900 !important;
+    border: 1px solid #e2e4e7 !important;
+    background: #fff !important;
+}
+
+/* Selects sempre claros */
+div[data-baseweb="select"] > div,
+div[data-baseweb="select"] input {
+    background: #f3f4f6 !important;
+    color: #1f2937 !important;
+    border: 1px solid #e0e3e7 !important;
+}
+div[data-baseweb="select"] span,
+div[data-baseweb="select"] svg { color: #1f2937 !important; fill: #1f2937 !important; }
+div[data-baseweb="popover"], ul[role="listbox"], li[role="option"] {
+    background: #fff !important;
+    color: #1f2937 !important;
+}
+li[role="option"]:hover { background: #eef6f0 !important; }
+
+/* Popover de configuração interna sem quebra/colisão */
+div[data-testid="stPopover"] button {
+    width: auto !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 10px !important;
+    background: transparent !important;
+    color: #4b5563 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    font-size: 13px !important;
+    white-space: nowrap !important;
+}
+
+/* Stepper: menos = branco; mais = verde */
+div[data-testid="stVerticalBlock"]:has(.product-controls-marker) button[kind="secondary"],
+div[data-testid="stVerticalBlock"]:has(.cart-controls-marker) button[kind="secondary"] {
+    background: #fff !important;
+    color: #1f2937 !important;
+    border: 1px solid #d9dde2 !important;
+    box-shadow: 0 2px 5px rgba(17,24,39,.06) !important;
+}
+div[data-testid="stVerticalBlock"]:has(.product-controls-marker) button[kind="primary"],
+div[data-testid="stVerticalBlock"]:has(.cart-controls-marker) button[kind="primary"] {
+    background: linear-gradient(180deg,#169640 0%,#08782d 100%) !important;
+    color: #fff !important;
+}
+
+/* Remover continua vermelho */
+div[data-testid="stVerticalBlock"]:has(.remove-btn-marker) button[kind="secondary"] {
+    background: #ef6f73 !important;
+    color: #fff !important;
+    border: 0 !important;
+}
+
+@media (max-width: 700px) {
+    /* Mantém os 2 cards por linha, como no mockup */
+    div[data-testid="stVerticalBlock"]:has(> div > .product-grid-row-marker) > div[data-testid="stHorizontalBlock"] {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+        gap: 8px !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div > .product-grid-row-marker) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: none !important;
+    }
+
+    /* Nunca empilha os controles de quantidade */
+    div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) > div[data-testid="stHorizontalBlock"],
+    div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) > div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 5px !important;
+        align-items: center !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
+    div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+        min-width: 0 !important;
+        width: auto !important;
+        flex: 1 1 0 !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:last-child {
+        flex: 2.2 1 0 !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:last-child {
+        flex: 1.7 1 0 !important;
+    }
+
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.product-grid-marker) { padding: 5px !important; }
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.product-grid-marker) [data-testid="stVerticalBlock"] { gap: .35rem !important; }
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.list-row-marker) [data-testid="stVerticalBlock"] { gap: .3rem !important; }
+    .product-sku { font-size: 12px !important; }
+    .product-title { font-size: 13.5px !important; min-height: 48px !important; }
+    .product-price { font-size: 18px !important; margin: 4px 0 !important; }
+    .product-status { font-size: 11px !important; }
+
+    /* Carrinho em uma linha compacta e profissional */
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.list-row-marker) { padding: 8px 9px !important; }
+    .list-row-icon { width: 42px !important; height: 42px !important; }
+    .list-row-title { font-size: 13px !important; }
+    .list-row-sub { font-size: 11px !important; }
+    .list-row-price { font-size: 15px !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1377,7 +1517,7 @@ with tab_cliente:
         with col_email:
             email = st.text_input("✉️ E-mail *", placeholder="email@exemplo.com", key=f"email_{rc}")
         ie = st.text_input("🧾 Inscrição Estadual *", placeholder="000.000.000.000", key=f"ie_{rc}")
-        with st.expander("Configuração interna Zionne", expanded=False):
+        with st.popover("🔒 Configuração interna Zionne", use_container_width=False):
             telefone_zionne = st.text_input(
                 "📞 Telefone WhatsApp Zionne", placeholder="(00) 00000-0000", key=f"tel_zionne_{rc}"
             )
@@ -1567,7 +1707,10 @@ with tab_produtos:
 
         # Grid de 2 colunas inspirado no mockup; no mobile o Streamlit empilha as colunas.
         for inicio in range(0, len(produtos), 2):
-            grid_cols = st.columns(2, gap="small")
+            grid_row = st.container()
+            with grid_row:
+                st.markdown('<div class="product-grid-row-marker"></div>', unsafe_allow_html=True)
+                grid_cols = st.columns(2, gap="small")
             for pos, row in enumerate(produtos[inicio:inicio + 2]):
                 with grid_cols[pos]:
                     codigo = row["codigo"]
@@ -1589,7 +1732,10 @@ with tab_produtos:
                             unsafe_allow_html=True,
                         )
 
-                        col_minus, col_val, col_plus, col_add = st.columns([1, 1, 1, 2.4])
+                        controls = st.container()
+                        with controls:
+                            st.markdown('<div class="product-controls-marker"></div>', unsafe_allow_html=True)
+                            col_minus, col_val, col_plus, col_add = st.columns([1, 1, 1, 2.4], gap="small")
                         with col_minus:
                             st.button(
                                 "−", key=f"dec_{codigo}_{rc}", type="secondary",
@@ -1602,7 +1748,7 @@ with tab_produtos:
                             )
                         with col_plus:
                             st.button(
-                                "+", key=f"inc_{codigo}_{rc}", type="secondary",
+                                "+", key=f"inc_{codigo}_{rc}", type="primary",
                                 use_container_width=True, on_click=_inc_qtd, args=(key_qtd,),
                             )
                         with col_add:
@@ -1660,7 +1806,10 @@ with tab_carrinho:
                             unsafe_allow_html=True,
                         )
 
-                    col_minus, col_val, col_plus, col_remove = st.columns([1, 1, 1, 3])
+                    cart_controls = st.container()
+                    with cart_controls:
+                        st.markdown('<div class="cart-controls-marker"></div>', unsafe_allow_html=True)
+                        col_minus, col_val, col_plus, col_remove = st.columns([1, 1, 1, 2.2], gap="small")
                     with col_minus:
                         st.button(
                             "−", key=f"cart_dec_{i}_{rc}", type="secondary",
@@ -1673,7 +1822,7 @@ with tab_carrinho:
                         )
                     with col_plus:
                         st.button(
-                            "+", key=f"cart_inc_{i}_{rc}", type="secondary",
+                            "+", key=f"cart_inc_{i}_{rc}", type="primary",
                             use_container_width=True, on_click=_inc_qtd_carrinho, args=(i,),
                         )
                     with col_remove:
