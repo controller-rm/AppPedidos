@@ -75,6 +75,7 @@ def inicializar_estado() -> None:
         # Limita a quantidade de cards renderizados de uma vez.
         # Isso reduz bastante o tempo de rerun ao adicionar produtos no Streamlit Cloud.
         "produtos_limite": 24,
+        "mostrar_manual": False,
     }
     for chave, valor in valores_padrao.items():
         if chave not in st.session_state:
@@ -1575,6 +1576,356 @@ div[data-testid="stVerticalBlock"]:has(.remove-btn-marker) button[kind="secondar
     .list-row-sub { font-size: 11px !important; }
     .list-row-price { font-size: 15px !important; }
 }
+
+/* ==========================================================
+   ZIONNE MOCKUP UI v5
+   Prioridade: mobile, aparência igual à referência enviada.
+   ========================================================== */
+
+/* App com largura de "mobile sales app", também no desktop */
+[data-testid="stAppViewContainer"] > .main .block-container {
+    max-width: 520px !important;
+    margin: 0 auto !important;
+    padding: .55rem .65rem 2rem !important;
+}
+
+/* Fundo */
+html, body, [data-testid="stAppViewContainer"] {
+    background: #f8f5ec !important;
+}
+
+/* Header */
+.app-bar {
+    min-height: 78px !important;
+    border-radius: 15px 15px 0 0 !important;
+    padding: 11px 15px !important;
+    background: linear-gradient(135deg,#0a4724 0%,#127433 100%) !important;
+    box-shadow: 0 5px 16px rgba(13,63,30,.17) !important;
+}
+.app-bar-emoji { font-size: 22px !important; }
+.app-bar-title { font-size: 20px !important; line-height:1 !important; }
+.app-bar-subtitle { display:block !important; font-size:10.5px !important; margin-top:4px !important; }
+.app-bar-cart { display:none !important; }
+
+div[data-testid="stVerticalBlock"]:has(> div > .novo-pedido-row-marker) {
+    margin-top: -57px !important;
+    margin-bottom: 27px !important;
+    padding-right: 8px !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .novo-pedido-row-marker) div[data-testid="stButton"] > button {
+    height: 32px !important;
+    min-height:32px !important;
+    font-size:11px !important;
+    border-radius:5px !important;
+    padding:0 9px !important;
+    background: rgba(5,80,34,.88) !important;
+}
+
+/* Tabs cabem todas na tela */
+div[data-baseweb="tab-list"] {
+    width:100% !important;
+    display:grid !important;
+    grid-template-columns: repeat(4, minmax(0,1fr)) !important;
+    gap:4px !important;
+    padding:7px 5px !important;
+    border-radius:0 0 12px 12px !important;
+    overflow:visible !important;
+}
+div[data-baseweb="tab"] {
+    min-width:0 !important;
+    width:100% !important;
+    min-height:28px !important;
+    border-radius:7px !important;
+}
+div[data-baseweb="tab"] button,
+div[data-baseweb="tab"] > div {
+    min-width:0 !important;
+    width:100% !important;
+    padding:4px 2px !important;
+    font-size:9.5px !important;
+    white-space:nowrap !important;
+    justify-content:center !important;
+    border-radius:7px !important;
+}
+div[data-baseweb="tab"][aria-selected="true"] {
+    background:linear-gradient(180deg,#d7b54d 0%,#c49a27 100%) !important;
+}
+
+/* Títulos */
+.stMarkdown h3 {
+    font-size:19px !important;
+    font-weight:900 !important;
+    margin:8px 0 6px !important;
+}
+.stMarkdown h1 {
+    font-size:21px !important;
+    margin:.2rem 0 .5rem !important;
+}
+
+/* Labels */
+.stTextInput label, .stSelectbox label, .stTextArea label {
+    font-size:12px !important;
+    font-weight:600 !important;
+}
+
+/* Inputs compactos e claros */
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input,
+div[data-baseweb="select"] > div {
+    background:#f1f1f3 !important;
+    border:1px solid #e4e4e8 !important;
+    border-radius:6px !important;
+    color:#20242c !important;
+    box-shadow:none !important;
+}
+div[data-baseweb="select"] * {
+    color:#20242c !important;
+}
+div[data-baseweb="popover"],
+ul[role="listbox"],
+ul[role="listbox"] li {
+    background:#fff !important;
+    color:#20242c !important;
+}
+
+/* Cliente */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(h1) {
+    padding:10px 11px !important;
+    box-shadow:none !important;
+    border:0 !important;
+    background:transparent !important;
+}
+.cliente-card {
+    border:1.5px solid #166e35 !important;
+    border-radius:8px !important;
+    padding:0 12px 12px !important;
+    box-shadow:0 3px 8px rgba(17,24,39,.07) !important;
+}
+.cliente-card-badge {
+    font-size:13px !important;
+    padding:8px 10px !important;
+    margin:0 -12px 10px !important;
+}
+.cliente-card-nome { font-size:13px !important; }
+.cliente-card-linha { font-size:11px !important; }
+
+/* Produtos: 2 colunas, cards compactos */
+div[data-testid="stVerticalBlock"]:has(> div > .product-grid-row-marker) > div[data-testid="stHorizontalBlock"] {
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:6px !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .product-grid-row-marker) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+    min-width:0 !important;
+    width:100% !important;
+    flex:none !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.product-grid-marker) {
+    padding:6px !important;
+    min-height:0 !important;
+    border:1px solid #e3d8b9 !important;
+    border-left:5px solid #15913d !important;
+    border-radius:8px !important;
+    background:linear-gradient(145deg,#fffdf8 0%,#f7efd9 100%) !important;
+    box-shadow:0 2px 7px rgba(17,24,39,.06) !important;
+}
+.product-sku {
+    font-size:10.5px !important;
+    padding:3px 5px !important;
+    margin-bottom:4px !important;
+    border-radius:999px !important;
+    background:#ece9e1 !important;
+}
+.product-title {
+    font-size:11.2px !important;
+    line-height:1.08 !important;
+    min-height:34px !important;
+    margin:0 !important;
+}
+.product-price {
+    font-size:14px !important;
+    margin:4px 0 !important;
+}
+.product-status {
+    font-size:9.5px !important;
+    margin-top:3px !important;
+}
+
+/* Produto: controles na mesma linha */
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) > div[data-testid="stHorizontalBlock"] {
+    display:flex !important;
+    flex-direction:row !important;
+    gap:3px !important;
+    align-items:center !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+    min-width:0 !important;
+    flex:1 1 0 !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:last-child {
+    flex:2.5 1 0 !important;
+}
+div[data-testid="stVerticalBlock"]:has(.product-controls-marker) div[data-testid="stButton"] > button,
+div[data-testid="stVerticalBlock"]:has(.product-controls-marker) div[data-testid="stNumberInput"] input {
+    height:28px !important;
+    min-height:28px !important;
+    font-size:10.5px !important;
+    border-radius:5px !important;
+    padding:0 3px !important;
+}
+div[data-testid="stVerticalBlock"]:has(.product-controls-marker) div[data-testid="stNumberInput"] input {
+    font-size:13px !important;
+    font-weight:900 !important;
+}
+
+/* Carrinho */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.list-row-marker) {
+    padding:7px 8px !important;
+    border:1px solid #dfd4b7 !important;
+    border-left:0 !important;
+    border-radius:8px !important;
+    background:linear-gradient(145deg,#fffdf8 0%,#f7efd9 100%) !important;
+    box-shadow:0 2px 7px rgba(17,24,39,.06) !important;
+    margin-bottom:6px !important;
+}
+.cart-product-image {
+    height:70px;
+    width:70px;
+    max-width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:6px;
+    border:1px solid #e2d5af;
+    background:#fff;
+    font-size:38px;
+}
+.cart-sku {
+    font-size:9.5px !important;
+    padding:2px 5px !important;
+    margin:0 0 2px !important;
+}
+.list-row-title {
+    font-size:11.5px !important;
+    line-height:1.1 !important;
+    font-weight:900 !important;
+}
+.cart-total-line {
+    margin-top:3px;
+    font-size:10px;
+    color:#222 !important;
+}
+.cart-total-line b {
+    color:#11642d !important;
+    font-size:11px;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) > div[data-testid="stHorizontalBlock"] {
+    display:flex !important;
+    flex-direction:row !important;
+    gap:3px !important;
+    align-items:center !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+    min-width:0 !important;
+    width:auto !important;
+    flex:1 1 0 !important;
+}
+div[data-testid="stVerticalBlock"]:has(.cart-controls-marker) div[data-testid="stButton"] > button,
+div[data-testid="stVerticalBlock"]:has(.cart-controls-marker) div[data-testid="stNumberInput"] input {
+    height:28px !important;
+    min-height:28px !important;
+    font-size:10px !important;
+    border-radius:5px !important;
+    padding:0 3px !important;
+}
+div[data-testid="stVerticalBlock"]:has(.cart-controls-marker) div[data-testid="stNumberInput"] input {
+    font-size:13px !important;
+    font-weight:900 !important;
+}
+div[data-testid="stVerticalBlock"]:has(.remove-btn-marker) button[kind="secondary"] {
+    background:#ef6468 !important;
+    color:#fff !important;
+    padding:0 !important;
+}
+
+/* Total carrinho */
+.cart-summary-box {
+    margin-top:7px;
+    padding:8px 10px;
+    border:1.5px solid #20242c;
+    border-radius:8px;
+    background:#f6edce;
+    box-shadow:0 3px 7px rgba(17,24,39,.08);
+}
+.cart-summary-title {
+    display:flex;
+    justify-content:space-between;
+    font-size:16px;
+    font-weight:900;
+    margin-bottom:3px;
+}
+.cart-summary-title strong { color:#20242c !important; }
+.cart-summary-row {
+    display:flex;
+    justify-content:space-between;
+    font-size:10px;
+}
+
+/* Finalização */
+.final-summary-box {
+    margin-top:10px;
+    padding:10px 12px;
+    background:linear-gradient(145deg,#fbf4dd,#f5e9c4);
+    border:1px solid #daca9f;
+    border-radius:8px;
+    font-size:11px;
+    box-shadow:0 2px 7px rgba(17,24,39,.06);
+}
+.final-summary-total {
+    margin-top:3px;
+    font-size:20px;
+    font-weight:900;
+    color:#20242c !important;
+}
+
+/* Botões gerais mais compactos */
+div[data-testid="stButton"] > button {
+    height:36px !important;
+    min-height:36px !important;
+    border-radius:6px !important;
+    font-size:12px !important;
+    box-shadow:0 2px 6px rgba(17,24,39,.08) !important;
+}
+
+/* Barra de downloads no estilo dos 3 cards da referência */
+div[data-testid="stVerticalBlock"]:has(> div > .bottom-action-bar-marker) {
+    position:static !important;
+    border-top:0 !important;
+    background:transparent !important;
+    padding:6px 0 !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .bottom-action-bar-marker) div[data-testid="stDownloadButton"] > button,
+div[data-testid="stVerticalBlock"]:has(> div > .bottom-action-bar-marker) div[data-testid="stLinkButton"] a {
+    min-height:60px !important;
+    background:#f1f1f1 !important;
+    border:1px solid #ebebeb !important;
+    border-radius:7px !important;
+    color:#4a4a4a !important;
+    font-size:10px !important;
+    box-shadow:none !important;
+}
+
+/* Esconde decoração Streamlit */
+[data-testid="stDecoration"] { display:none !important; }
+
+@media (max-width: 520px) {
+    [data-testid="stAppViewContainer"] > .main .block-container {
+        width:100% !important;
+        padding:.35rem .45rem 1.5rem !important;
+    }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1616,12 +1967,17 @@ with tab_cliente:
                 st.error(erro)
                 st.warning("CNPJ não encontrado. Insira os dados manualmente abaixo.")
                 st.session_state.dados_cliente = None
+                st.session_state.mostrar_manual = True
             else:
                 st.session_state.dados_cliente = dados
+                st.session_state.mostrar_manual = False
                 st.success("Cliente localizado!")
 
-    # Campos para entrada manual (sempre visíveis se a consulta não retornou dados)
-    if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True) or st.session_state.dados_cliente is None:
+    if st.button("Inserir Dados Manualmente", type="secondary", use_container_width=True):
+        st.session_state.mostrar_manual = not st.session_state.mostrar_manual
+
+    # Entrada manual fica recolhida por padrão para manter a tela limpa.
+    if st.session_state.mostrar_manual:
         st.markdown(
             "<h1 style='font-size:20px;'>📝 Inserir Dados Manualmente</h1>",
             unsafe_allow_html=True,
@@ -1901,22 +2257,17 @@ with tab_carrinho:
                 with card:
                     st.markdown('<div class="list-row-marker"></div>', unsafe_allow_html=True)
 
-                    col_icon, col_info, col_price = st.columns([1, 5, 2])
+                    col_icon, col_info = st.columns([1.25, 4.75], gap="small")
                     with col_icon:
                         st.markdown(
-                            f'<div class="list-row-icon">{icone_produto(item["descricao"])}</div>',
+                            f'<div class="cart-product-image">{icone_produto(item["descricao"])}</div>',
                             unsafe_allow_html=True,
                         )
                     with col_info:
                         st.markdown(
-                            f'<div class="list-row-title">{item["descricao"]}</div>'
                             f'<span class="cart-sku">📦 SKU {item["codigo"]}</span>'
-                            f'<div class="list-row-sub">R$ {item["preco"]:.2f}/un.</div>',
-                            unsafe_allow_html=True,
-                        )
-                    with col_price:
-                        st.markdown(
-                            f'<div class="list-row-price">R$ {item["total"]:.2f}</div>',
+                            f'<div class="list-row-title">{item["descricao"]}</div>'
+                            f'<div class="cart-total-line">Total: <b>R$ {item["total"]:.2f}</b></div>',
                             unsafe_allow_html=True,
                         )
 
@@ -1927,7 +2278,9 @@ with tab_carrinho:
                     cart_controls = st.container()
                     with cart_controls:
                         st.markdown('<div class="cart-controls-marker"></div>', unsafe_allow_html=True)
-                        col_minus, col_val, col_plus, col_remove = st.columns([1, 1, 1, 2.2], gap="small")
+                        col_minus, col_val, col_plus, col_update, col_remove = st.columns(
+                            [0.75, 0.95, 0.75, 2.7, 0.7], gap="small"
+                        )
                     with col_minus:
                         st.button(
                             "−", key=f"cart_dec_{i}_{rc}", type="secondary",
@@ -1951,18 +2304,27 @@ with tab_carrinho:
                             use_container_width=True, on_click=_inc_qtd_carrinho,
                             args=(i, key_qtd_cart),
                         )
+                    with col_update:
+                        st.button(
+                            "Atualizar ↻", key=f"cart_upd_{i}_{rc}", type="primary",
+                            use_container_width=True, on_click=_atualizar_qtd_carrinho,
+                            args=(i, key_qtd_cart),
+                        )
                     with col_remove:
                         st.markdown('<div class="remove-btn-marker"></div>', unsafe_allow_html=True)
                         st.button(
-                            "🗑️ Remover", key=f"cart_rm_{i}_{rc}", type="secondary",
+                            "🗑", key=f"cart_rm_{i}_{rc}", type="secondary",
                             use_container_width=True, on_click=_remover_item_carrinho, args=(i,),
                         )
 
         st.markdown(
-            f"<div class='total-box'>"
-            f"<span class='total-label'>💰 TOTAL DO PEDIDO</span>"
-            f"<span class='total-value'>R$ {total_pedido:,.2f}</span>"
-            f"</div>",
+            f"""
+            <div class="cart-summary-box">
+                <div class="cart-summary-title">💰 TOTAL: <strong>R$ {total_pedido:,.2f}</strong></div>
+                <div class="cart-summary-row"><span>Subtotal</span><span>R$ {total_pedido:,.2f}</span></div>
+                <div class="cart-summary-row"><span>Total de subtotal</span><span>R$ {total_pedido:,.2f}</span></div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
     else:
@@ -1972,7 +2334,7 @@ with tab_carrinho:
 # ABA FINALIZAÇÃO
 # =====================================================
 with tab_final:
-    st.header("⚙️ FINALIZAÇÃO")
+    st.markdown("### ⚙️ ABA FINALIZAÇÃO")
 
     if not st.session_state.carrinho or not st.session_state.dados_cliente:
         st.info("É necessário cliente e produtos para finalizar.")
@@ -2025,6 +2387,19 @@ with tab_final:
                 "telefone_zionne": telefone_zionne,
             }
             st.success("Pedido gerado com sucesso! Veja as opções abaixo.")
+
+    if st.session_state.dados_cliente:
+        cliente_resumo = st.session_state.dados_cliente.get("razao", "Cliente")
+        st.markdown(
+            f"""
+            <div class="final-summary-box">
+                <div>👥 <b>CLIENTE:</b> {cliente_resumo}</div>
+                <div>💰 <b>TOTAL DO PEDIDO:</b></div>
+                <div class="final-summary-total">R$ {total_pedido:,.2f}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     if st.session_state.pedido_gerado:
         pedido = st.session_state.pedido_gerado
