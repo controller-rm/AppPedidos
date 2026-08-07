@@ -1417,6 +1417,51 @@ div[data-testid="stPopover"] button {
     white-space: nowrap !important;
 }
 
+
+/* Quantidade digitável no card de produto.
+   O st.number_input gera um input numérico nativo; em smartphones,
+   tocar no valor abre o teclado numérico. Escondemos os controles
+   nativos do Streamlit porque os botões − e + já existem ao lado. */
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input {
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 4px !important;
+    text-align: center !important;
+    font-size: 19px !important;
+    font-weight: 900 !important;
+    line-height: 40px !important;
+    color: #1f2937 !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e4e7 !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    -moz-appearance: textfield !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input::-webkit-outer-spin-button,
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] button {
+    display: none !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] [data-baseweb="input"] {
+    height: 40px !important;
+    min-height: 40px !important;
+    background: #ffffff !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input:focus {
+    border-color: #16833a !important;
+    box-shadow: 0 0 0 2px rgba(22,131,58,.14) !important;
+    outline: none !important;
+}
+
 /* Stepper: menos = branco; mais = verde */
 div[data-testid="stVerticalBlock"]:has(.product-controls-marker) button[kind="secondary"],
 div[data-testid="stVerticalBlock"]:has(.cart-controls-marker) button[kind="secondary"] {
@@ -1742,9 +1787,15 @@ with tab_produtos:
                                 use_container_width=True, on_click=_dec_qtd, args=(key_qtd,),
                             )
                         with col_val:
-                            st.markdown(
-                                f'<div class="stepper-value">{st.session_state[key_qtd]}</div>',
-                                unsafe_allow_html=True,
+                            # Campo editável: ao tocar na quantidade no celular,
+                            # o navegador abre o teclado numérico.
+                            st.number_input(
+                                "Quantidade",
+                                min_value=1,
+                                step=1,
+                                key=key_qtd,
+                                label_visibility="collapsed",
+                                format="%d",
                             )
                         with col_plus:
                             st.button(
