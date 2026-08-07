@@ -72,6 +72,9 @@ def inicializar_estado() -> None:
         "last_scan_time": 0.0,
         "scan_value": "",
         "pedido_gerado": None,
+        # Limita a quantidade de cards renderizados de uma vez.
+        # Isso reduz bastante o tempo de rerun ao adicionar produtos no Streamlit Cloud.
+        "produtos_limite": 24,
     }
     for chave, valor in valores_padrao.items():
         if chave not in st.session_state:
@@ -199,20 +202,40 @@ def _adicionar_ao_carrinho(codigo: str, descricao: str, preco: float, key_qtd: s
     st.toast(f"✅ {codigo} adicionado ao pedido", icon="📦")
 
 
-def _dec_qtd_carrinho(idx: int) -> None:
+def _atualizar_qtd_carrinho(idx: int, key_qtd: str) -> None:
+    """Atualiza quantidade e total do item após digitação direta no carrinho."""
+    if idx >= len(st.session_state.carrinho):
+        return
+    qtd = max(1, int(st.session_state.get(key_qtd, 1) or 1))
+    item = st.session_state.carrinho[idx]
+    item["qtd"] = qtd
+    item["total"] = qtd * item["preco"]
+
+
+def _dec_qtd_carrinho(idx: int, key_qtd: str) -> None:
+    if idx >= len(st.session_state.carrinho):
+        return
     item = st.session_state.carrinho[idx]
     item["qtd"] = max(1, item["qtd"] - 1)
     item["total"] = item["qtd"] * item["preco"]
+    st.session_state[key_qtd] = item["qtd"]
 
 
-def _inc_qtd_carrinho(idx: int) -> None:
+def _inc_qtd_carrinho(idx: int, key_qtd: str) -> None:
+    if idx >= len(st.session_state.carrinho):
+        return
     item = st.session_state.carrinho[idx]
     item["qtd"] += 1
     item["total"] = item["qtd"] * item["preco"]
+    st.session_state[key_qtd] = item["qtd"]
 
 
 def _remover_item_carrinho(idx: int) -> None:
     del st.session_state.carrinho[idx]
+
+
+def _mostrar_mais_produtos() -> None:
+    st.session_state.produtos_limite += 24
 
 
 # =====================================================
@@ -1372,10 +1395,22 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.list-row-marker) {
 }
 
 .product-sku {
-    font-size: 13px !important;
-    padding: 5px 10px !important;
-    letter-spacing: .15px !important;
+    font-size: 15px !important;
+    padding: 6px 11px !important;
+    letter-spacing: .2px !important;
     color: #1f2937 !important;
+    font-weight: 900 !important;
+}
+.cart-sku {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #ece9e2;
+    color: #1f2937 !important;
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    letter-spacing: .2px;
 }
 .product-title { font-size: 15.5px !important; line-height: 1.18 !important; }
 .product-price { font-size: 20px !important; }
@@ -1422,11 +1457,13 @@ div[data-testid="stPopover"] button {
    O st.number_input gera um input numérico nativo; em smartphones,
    tocar no valor abre o teclado numérico. Escondemos os controles
    nativos do Streamlit porque os botões − e + já existem ao lado. */
-div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] {
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"],
+div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) div[data-testid="stNumberInput"] {
     margin: 0 !important;
     padding: 0 !important;
 }
-div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input {
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input,
+div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) div[data-testid="stNumberInput"] input {
     height: 40px !important;
     min-height: 40px !important;
     padding: 0 4px !important;
@@ -1442,21 +1479,26 @@ div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[dat
     -moz-appearance: textfield !important;
 }
 div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input::-webkit-outer-spin-button,
-div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input::-webkit-inner-spin-button {
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input::-webkit-inner-spin-button,
+div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) div[data-testid="stNumberInput"] input::-webkit-outer-spin-button,
+div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) div[data-testid="stNumberInput"] input::-webkit-inner-spin-button {
     -webkit-appearance: none !important;
     margin: 0 !important;
 }
-div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] button {
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] button,
+div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) div[data-testid="stNumberInput"] button {
     display: none !important;
 }
-div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] [data-baseweb="input"] {
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] [data-baseweb="input"],
+div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) div[data-testid="stNumberInput"] [data-baseweb="input"] {
     height: 40px !important;
     min-height: 40px !important;
     background: #ffffff !important;
     border: 0 !important;
     border-radius: 10px !important;
 }
-div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input:focus {
+div[data-testid="stVerticalBlock"]:has(> div > .product-controls-marker) div[data-testid="stNumberInput"] input:focus,
+div[data-testid="stVerticalBlock"]:has(> div > .cart-controls-marker) div[data-testid="stNumberInput"] input:focus {
     border-color: #16833a !important;
     box-shadow: 0 0 0 2px rgba(22,131,58,.14) !important;
     outline: none !important;
@@ -1520,7 +1562,8 @@ div[data-testid="stVerticalBlock"]:has(.remove-btn-marker) button[kind="secondar
     div[data-testid="stVerticalBlockBorderWrapper"]:has(.product-grid-marker) { padding: 5px !important; }
     div[data-testid="stVerticalBlockBorderWrapper"]:has(.product-grid-marker) [data-testid="stVerticalBlock"] { gap: .35rem !important; }
     div[data-testid="stVerticalBlockBorderWrapper"]:has(.list-row-marker) [data-testid="stVerticalBlock"] { gap: .3rem !important; }
-    .product-sku { font-size: 12px !important; }
+    .product-sku { font-size: 14px !important; }
+    .cart-sku { font-size: 13.5px !important; }
     .product-title { font-size: 13.5px !important; min-height: 48px !important; }
     .product-price { font-size: 18px !important; margin: 4px 0 !important; }
     .product-status { font-size: 11px !important; }
@@ -1740,15 +1783,25 @@ with tab_produtos:
         | df_produtos["codigo"].str.contains(busca, case=False, na=False)
     ]
 
+    # PERFORMANCE:
+    # Renderizar todos os cards do catálogo a cada clique é caro no Streamlit Cloud.
+    # Sem busca, mostramos 24 por vez. Quando o usuário pesquisa por SKU/descrição,
+    # exibimos todos os resultados encontrados, que normalmente são poucos.
+    total_encontrados = len(df_filtrado)
+    if busca.strip():
+        df_exibido = df_filtrado
+    else:
+        df_exibido = df_filtrado.head(st.session_state.produtos_limite)
+
     st.markdown(
-        f"<div class='list-toolbar'>Mostrando <b>{len(df_filtrado)}</b> produto(s)</div>",
+        f"<div class='list-toolbar'>Mostrando <b>{len(df_exibido)}</b> de <b>{total_encontrados}</b> produto(s)</div>",
         unsafe_allow_html=True,
     )
 
     container_produtos = st.container()
     with container_produtos:
         carrinho_map = {item["codigo"]: item for item in st.session_state.carrinho}
-        produtos = df_filtrado.to_dict("records")
+        produtos = df_exibido.to_dict("records")
 
         # Grid de 2 colunas inspirado no mockup; no mobile o Streamlit empilha as colunas.
         for inicio in range(0, len(produtos), 2):
@@ -1818,6 +1871,15 @@ with tab_produtos:
                         else:
                             st.markdown('<div class="product-status">&nbsp;</div>', unsafe_allow_html=True)
 
+    if not busca.strip() and len(df_exibido) < total_encontrados:
+        restantes = total_encontrados - len(df_exibido)
+        st.button(
+            f"Mostrar mais produtos ({restantes} restantes)",
+            key=f"mostrar_mais_{rc}",
+            use_container_width=True,
+            on_click=_mostrar_mais_produtos,
+        )
+
 # =====================================================
 # ABA CARRINHO
 # =====================================================
@@ -1848,7 +1910,8 @@ with tab_carrinho:
                     with col_info:
                         st.markdown(
                             f'<div class="list-row-title">{item["descricao"]}</div>'
-                            f'<div class="list-row-sub">Código {item["codigo"]} · R$ {item["preco"]:.2f}/un.</div>',
+                            f'<span class="cart-sku">📦 SKU {item["codigo"]}</span>'
+                            f'<div class="list-row-sub">R$ {item["preco"]:.2f}/un.</div>',
                             unsafe_allow_html=True,
                         )
                     with col_price:
@@ -1857,6 +1920,10 @@ with tab_carrinho:
                             unsafe_allow_html=True,
                         )
 
+                    key_qtd_cart = f"cart_qtd_{item['codigo']}_{rc}"
+                    if key_qtd_cart not in st.session_state:
+                        st.session_state[key_qtd_cart] = int(item["qtd"])
+
                     cart_controls = st.container()
                     with cart_controls:
                         st.markdown('<div class="cart-controls-marker"></div>', unsafe_allow_html=True)
@@ -1864,17 +1931,25 @@ with tab_carrinho:
                     with col_minus:
                         st.button(
                             "−", key=f"cart_dec_{i}_{rc}", type="secondary",
-                            use_container_width=True, on_click=_dec_qtd_carrinho, args=(i,),
+                            use_container_width=True, on_click=_dec_qtd_carrinho,
+                            args=(i, key_qtd_cart),
                         )
                     with col_val:
-                        st.markdown(
-                            f'<div class="stepper-value">{item["qtd"]}</div>',
-                            unsafe_allow_html=True,
+                        st.number_input(
+                            "Quantidade no carrinho",
+                            min_value=1,
+                            step=1,
+                            key=key_qtd_cart,
+                            label_visibility="collapsed",
+                            format="%d",
+                            on_change=_atualizar_qtd_carrinho,
+                            args=(i, key_qtd_cart),
                         )
                     with col_plus:
                         st.button(
                             "+", key=f"cart_inc_{i}_{rc}", type="primary",
-                            use_container_width=True, on_click=_inc_qtd_carrinho, args=(i,),
+                            use_container_width=True, on_click=_inc_qtd_carrinho,
+                            args=(i, key_qtd_cart),
                         )
                     with col_remove:
                         st.markdown('<div class="remove-btn-marker"></div>', unsafe_allow_html=True)
