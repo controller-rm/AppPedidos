@@ -1,5 +1,11 @@
-streamlit>=1.30.0
-pandas>=2.0.0
-requests>=2.31.0
-fpdf>=1.7.2
-streamlit-qrcode-scanner
+#streamlit>=1.30.0
+#pandas>=2.0.0
+#requests>=2.31.0
+#fpdf>=1.7.2
+#streamlit-qrcode-scanner
+
+streamlit==1.60.0
+pandas
+requests
+fpdf==1.7.2
+streamlit-qrcode-scanner==0.1.2
